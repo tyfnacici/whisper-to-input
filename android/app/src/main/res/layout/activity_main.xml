@@ -141,6 +141,22 @@
                 style="@style/SettingsSpinner"
                 android:entries="@array/settings_auto_recording_start_array" />
 
+            <!-- Live Transcription -->
+            <TextView
+                android:id="@+id/label_live_transcription"
+                style="@style/SettingsLabel"
+                android:text="@string/settings_live_transcription" />
+            <TextView
+                android:id="@+id/description_live_transcription"
+                style="@style/SettingsDescription"
+                android:text="@string/settings_live_transcription_desc" />
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switch_live_transcription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:minHeight="48dp" />
+
             <!-- Auto Switch Back -->
             <TextView
                 android:id="@+id/label_auto_switch_back"

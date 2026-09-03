@@ -36,6 +36,7 @@ import android.widget.Spinner
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doOnTextChanged
+import com.google.android.material.materialswitch.MaterialSwitch
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -58,6 +59,7 @@ val SPEECH_TO_TEXT_BACKEND = stringPreferencesKey("speech-to-text-backend")
 val ENDPOINT = stringPreferencesKey("endpoint")
 val LANGUAGE_CODE = stringPreferencesKey("language-code")
 val AUTO_RECORDING_START = booleanPreferencesKey("is-auto-recording-start")
+val LIVE_TRANSCRIPTION = booleanPreferencesKey("live-transcription")
 val AUTO_SWITCH_BACK = booleanPreferencesKey("auto-switch-back")
 val ADD_TRAILING_SPACE = booleanPreferencesKey("add-trailing-space")
 val POSTPROCESSING = stringPreferencesKey("postprocessing")
@@ -238,6 +240,40 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    inner class SettingSwitch(
+        private val viewId: Int,
+        private val preferenceKey: Preferences.Key<Boolean>,
+        private val defaultValue: Boolean = true
+    ): SettingItem() {
+        override fun setup(): Job {
+            return CoroutineScope(Dispatchers.Main).launch {
+                val btnApply: Button = findViewById(R.id.btn_settings_apply)
+                val switch = findViewById<MaterialSwitch>(viewId)
+                switch.isEnabled = false
+                switch.setOnCheckedChangeListener { _, _ ->
+                    if (!setupSettingItemsDone) return@setOnCheckedChangeListener
+                    isDirty = true
+                    btnApply.isEnabled = true
+                }
+
+                // Read data. If none, apply default value.
+                val settingValue: Boolean? = readSetting(preferenceKey)
+                val value: Boolean = settingValue ?: defaultValue
+                if (settingValue == null) {
+                    writeSetting(preferenceKey, defaultValue)
+                }
+                switch.isChecked = value
+                switch.isEnabled = true
+            }
+        }
+        override suspend fun apply() {
+            if (!isDirty) return
+            val newValue: Boolean = findViewById<MaterialSwitch>(viewId).isChecked
+            writeSetting(preferenceKey, newValue)
+            isDirty = false
+        }
+    }
+
     inner class SettingStringDropdown(
         private val viewId: Int,
         private val preferenceKey: Preferences.Key<String>,
@@ -322,6 +358,7 @@ class MainActivity : AppCompatActivity() {
                     getString(R.string.settings_option_yes) to true,
                     getString(R.string.settings_option_no) to false,
                 )),
+                SettingSwitch(R.id.switch_live_transcription, LIVE_TRANSCRIPTION, true),
                 SettingDropdown(R.id.spinner_auto_switch_back, AUTO_SWITCH_BACK, hashMapOf(
                     getString(R.string.settings_option_yes) to true,
                     getString(R.string.settings_option_no) to false,

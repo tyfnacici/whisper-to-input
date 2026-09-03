@@ -55,6 +55,8 @@
         <item>@string/settings_option_yes</item>
         <item>@string/settings_option_no</item>
     </string-array>
+    <string name="settings_live_transcription">Live Transcription</string>
+    <string name="settings_live_transcription_desc">Whether to continuously transcribe while recording, instead of only after recording stops.</string>
     <string name="settings_auto_switch_back">Auto Switch Back</string>
     <string name="settings_auto_switch_back_desc">Automatically switch back to the previous keyboard after transcription.</string>
     <string-array name="settings_auto_switch_back_array">
