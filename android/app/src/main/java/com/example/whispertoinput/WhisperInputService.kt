@@ -22,6 +22,7 @@ package com.example.whispertoinput
 import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.util.Log
+import android.view.ContextThemeWrapper
 import android.view.View
 import android.content.Intent
 import android.os.IBinder
@@ -180,10 +181,17 @@ class WhisperInputService : InputMethodService() {
             onUpdateMicrophoneAmplitude(amplitude)
         }
 
-        // Wrap the service context with Material You dynamic colors when
-        // available, so the keyboard view picks up the wallpaper palette.
-        val themedContext = DynamicColors.wrapContextIfAvailable(this)
-        val themedLayoutInflater = LayoutInflater.from(themedContext)
+        // The IME inflates under the system Theme.DeviceDefault.InputMethod, which
+        // has no Material 3 attributes (colorSurface etc.) — inflating with it
+        // crashes on any ?attr/ M3 reference. Wrap the context in an inflated
+        // version of OUR Material 3 theme (with dynamic colors applied on top,
+        // so the wallpaper palette is used when available).
+        val themedContext = ContextThemeWrapper(
+            this,
+            R.style.Theme_WhisperToInput
+        )
+        DynamicColors.wrapContextIfAvailable(themedContext)
+        val themedLayoutInflater = themedContext.getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
 
         // Returns the keyboard after setting it up and inflating its layout
         return whisperKeyboard.setup(themedLayoutInflater,
