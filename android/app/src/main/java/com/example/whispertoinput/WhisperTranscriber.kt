@@ -59,72 +59,6 @@ class WhisperTranscriber {
         callback: (String?) -> Unit,
         exceptionCallback: (String) -> Unit
     ) {
-        suspend fun makeWhisperRequest(): String {
-            // Retrieve configs
-            val (endpoint, languageCode, speechToTextBackend, postprocessing, addTrailingSpace, requestTimeout) = context.dataStore.data.map { preferences: Preferences ->
-                Config(
-                    preferences[ENDPOINT] ?: "",
-                    preferences[LANGUAGE_CODE] ?: "",
-                    preferences[SPEECH_TO_TEXT_BACKEND] ?: context.getString(R.string.settings_option_openai_api),
-                    preferences[POSTPROCESSING] ?: context.getString(R.string.settings_option_no_conversion),
-                    preferences[ADD_TRAILING_SPACE] ?: false,
-                    preferences[REQUEST_TIMEOUT] ?: context.getString(R.string.settings_option_timeout_auto)
-                )
-            }.first()
-
-            // Foolproof message
-            if (endpoint == "") {
-                throw Exception(context.getString(R.string.error_endpoint_unset))
-            }
-
-            // Make request
-            // The read timeout adapts to the recording length so that long dictations
-            // are not cut off by the client (the self-hosted server may need a while
-            // to transcribe). Fixed overrides are also available in the settings.
-            val readTimeoutSeconds: Long = resolveReadTimeoutSeconds(context, requestTimeout, filename)
-            val client = OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(60, TimeUnit.SECONDS)
-                .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
-                .build()
-            val request = buildWhisperRequest(
-                context,
-                filename,
-                mediaType,
-                speechToTextBackend,
-                endpoint,
-                languageCode
-            )
-            val response = client.newCall(request).execute()
-
-            // If request is not successful, or response code is weird
-            if (!response.isSuccessful || response.code / 100 != 2) {
-                throw Exception(response.body!!.string().replace('\n', ' '))
-            }
-
-            var rawText = response.body!!.string().trim()
-            
-            // For NVIDIA NIM, remove quotes if they wrap the text
-            // Not sure if this is a bug or a feature...
-            if (speechToTextBackend == context.getString(R.string.settings_option_nvidia_nim) && 
-                rawText.startsWith("\"") && rawText.endsWith("\"")) {
-                rawText = rawText.substring(1, rawText.length - 1).trim()
-            }
-            
-            val processedText = when (postprocessing) {
-                context.getString(R.string.settings_option_to_simplified) -> ChineseUtils.tw2s(rawText)
-                context.getString(R.string.settings_option_to_traditional) -> ChineseUtils.s2tw(rawText)
-                else -> rawText // No conversion
-            }
-
-            if (attachToEnd == "") {
-                return processedText + if (addTrailingSpace) " " else ""
-            } else {
-                // Only used for space key and enter key.
-                return processedText + attachToEnd
-            }
-        }
-
         // Create a cancellable job in the main thread (for UI updating)
         val job = CoroutineScope(Dispatchers.Main).launch {
 
@@ -134,7 +68,7 @@ class WhisperTranscriber {
             val (transcribedText, exceptionMessage) = withContext(Dispatchers.IO) {
                 try {
                     // Perform transcription here
-                    val response = makeWhisperRequest()
+                    val response = transcribe(context, filename, mediaType, attachToEnd)
                     // Clean up unused audio file after transcription
                     // Ref: https://developer.android.com/reference/android/media/MediaRecorder#setOutputFile(java.io.File)
                     File(filename).delete()
@@ -162,6 +96,82 @@ class WhisperTranscriber {
 
     fun stop() {
         registerTranscriptionJob(null)
+    }
+
+    // Core request/execute logic for transcribing an audio file, shared by the
+    // full-recording path (startAsync) and the live-chunk path (LiveTranscriber).
+    // Builds and executes the backend request and post-processes the response.
+    // Returns the transcribed text, ready to be committed to the input connection.
+    // Must be called from a background dispatcher (it performs blocking network I/O).
+    internal suspend fun transcribe(
+        context: Context,
+        filename: String,
+        mediaType: String,
+        attachToEnd: String = ""
+    ): String {
+        // Retrieve configs
+        val (endpoint, languageCode, speechToTextBackend, postprocessing, addTrailingSpace, requestTimeout) = context.dataStore.data.map { preferences: Preferences ->
+            Config(
+                preferences[ENDPOINT] ?: "",
+                preferences[LANGUAGE_CODE] ?: "",
+                preferences[SPEECH_TO_TEXT_BACKEND] ?: context.getString(R.string.settings_option_openai_api),
+                preferences[POSTPROCESSING] ?: context.getString(R.string.settings_option_no_conversion),
+                preferences[ADD_TRAILING_SPACE] ?: false,
+                preferences[REQUEST_TIMEOUT] ?: context.getString(R.string.settings_option_timeout_auto)
+            )
+        }.first()
+
+        // Foolproof message
+        if (endpoint == "") {
+            throw Exception(context.getString(R.string.error_endpoint_unset))
+        }
+
+        // Make request
+        // The read timeout adapts to the recording length so that long dictations
+        // are not cut off by the client (the self-hosted server may need a while
+        // to transcribe). Fixed overrides are also available in the settings.
+        val readTimeoutSeconds: Long = resolveReadTimeoutSeconds(context, requestTimeout, filename)
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
+            .build()
+        val request = buildWhisperRequest(
+            context,
+            filename,
+            mediaType,
+            speechToTextBackend,
+            endpoint,
+            languageCode
+        )
+        val response = client.newCall(request).execute()
+
+        // If request is not successful, or response code is weird
+        if (!response.isSuccessful || response.code / 100 != 2) {
+            throw Exception(response.body!!.string().replace('\n', ' '))
+        }
+
+        var rawText = response.body!!.string().trim()
+
+        // For NVIDIA NIM, remove quotes if they wrap the text
+        // Not sure if this is a bug or a feature...
+        if (speechToTextBackend == context.getString(R.string.settings_option_nvidia_nim) &&
+            rawText.startsWith("\"") && rawText.endsWith("\"")) {
+            rawText = rawText.substring(1, rawText.length - 1).trim()
+        }
+
+        val processedText = when (postprocessing) {
+            context.getString(R.string.settings_option_to_simplified) -> ChineseUtils.tw2s(rawText)
+            context.getString(R.string.settings_option_to_traditional) -> ChineseUtils.s2tw(rawText)
+            else -> rawText // No conversion
+        }
+
+        if (attachToEnd == "") {
+            return processedText + if (addTrailingSpace) " " else ""
+        } else {
+            // Only used for space key and enter key.
+            return processedText + attachToEnd
+        }
     }
 
     // Resolves the read timeout (in seconds) for the transcription request.
@@ -241,9 +251,9 @@ class WhisperTranscriber {
             setType(MultipartBody.FORM)
             // Determine filename based on media type
             val formDataFilename = if (mediaType == "audio/ogg") "@audio.ogg" else "@audio.m4a"
-            
+
             // Add file to payload
-            if (speechToTextBackend == context.getString(R.string.settings_option_openai_api) || 
+            if (speechToTextBackend == context.getString(R.string.settings_option_openai_api) ||
                 speechToTextBackend == context.getString(R.string.settings_option_nvidia_nim)) {
                 addFormDataPart("file", formDataFilename, fileBody)
             } else if (speechToTextBackend == context.getString(R.string.settings_option_whisper_asr_webservice)) {
