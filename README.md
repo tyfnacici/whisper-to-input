@@ -12,7 +12,7 @@ This fork is set up for **self-hosted Whisper servers** over Tailscale/LAN, with
 - **CI releases** — APKs are built automatically and attached to
   [Releases](https://github.com/tyfnacici/whisper-to-input/releases).
 
-Based on [j3soon/whisper-to-input](https://github.com/j3soon/whisper-to-input) (GPLv3).
+Based on [j3soon/whisper-to-input](https://github.com/j3soon/whisper-to-input) — licensed under GPLv3.
 
 ## Installation
 
@@ -23,26 +23,16 @@ Based on [j3soon/whisper-to-input](https://github.com/j3soon/whisper-to-input) (
    If you previously had the upstream app installed, uninstall it first (different
    signing keys).
 
-   ![APK file](docs/images/01-apk-file.jpg)
-   ![Install anyway](docs/images/04-unsafe-app-install-anyway.jpg)
-
 2. Allow the app to record audio and send notifications.
-
-   ![Permissions](docs/images/06-record-audio-permission.jpg)
 
 3. Open the app and configure the connection to your Whisper server (see below).
 
-   ![Settings](docs/images/08-app-settings-page.jpg)
-
 4. Enable the keyboard: system settings → Manage keyboards → enable `Whisper Input`.
-
-   ![Manage keyboards](docs/images/12-settings-on-screen-keyboard.jpg)
 
 5. Focus any text field, switch to `Whisper Input` via the keyboard picker, and start
    dictating.
 
    ![Choose input method](docs/images/17-choose-input-method.jpg)
-   ![Keyboard](docs/images/18-app-keyboard.jpg)
 
 ## Server Setup (self-hosted, recommended)
 
@@ -105,10 +95,5 @@ backend is also still supported (`Endpoint: http://<SERVER_IP>:9000/asr`).
 
 ## License
 
-This repository is licensed under the GPLv3 license — see the
+This fork is licensed under GPLv3, same as the original project — see the
 [LICENSE](android/LICENSE) file.
-
-Original project by Yan-Bin Diau ([@tigerpaws01](https://github.com/tigerpaws01)),
-Johnson Sun ([@j3soon](https://github.com/j3soon)) and
-[Ying-Chou Sun](https://github.com/ijsun) — full
-[contributor list](https://github.com/j3soon/whisper-to-input/graphs/contributors).
