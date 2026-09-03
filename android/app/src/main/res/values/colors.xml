@@ -14,4 +14,6 @@
     <color name="brand_surface">#FFFDF6</color>
     <color name="brand_on_surface">#173B2A</color>
     <color name="brand_surface_variant">#E8F0E8</color>
+    <color name="brand_primary_container">#CDE4D5</color>
+    <color name="brand_on_primary_container">#0B2C1D</color>
 </resources>

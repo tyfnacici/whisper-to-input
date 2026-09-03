@@ -6,6 +6,8 @@
              Overridden by Material You dynamic color when available. -->
         <item name="colorPrimary">@color/brand_primary</item>
         <item name="colorOnPrimary">@color/brand_on_primary</item>
+        <item name="colorPrimaryContainer">@color/brand_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/brand_on_primary_container</item>
         <item name="colorSecondary">@color/brand_secondary</item>
         <item name="colorTertiary">@color/brand_tertiary</item>
         <item name="colorSurface">@color/brand_surface</item>
@@ -15,20 +17,15 @@
         <item name="colorOnBackground">@color/brand_on_surface</item>
     </style>
 
+    <!-- Keyboard bar styles: resolved from the Material 3 color roles so the
+         IME surface follows light/dark and dynamic color automatically. -->
     <style name="RegularImage">
-        <item name="android:tint">@color/theme_rich_black</item>
+        <item name="android:tint">?attr/colorOnSurfaceVariant</item>
     </style>
 
     <style name="RegularText">
-        <item name="android:textColor">@color/theme_rich_black</item>
-    </style>
-
-    <style name="Background">
-        <item name="android:background">@color/theme_light_grey</item>
-    </style>
-
-    <style name="TopBar">
-        <item name="android:background">@color/theme_rich_black</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:textSize">14sp</item>
     </style>
 
     <!-- Settings Page Styles -->
