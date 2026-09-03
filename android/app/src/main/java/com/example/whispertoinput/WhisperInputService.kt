@@ -21,6 +21,7 @@ package com.example.whispertoinput
 
 import android.inputmethodservice.InputMethodService
 import android.os.Build
+import android.util.Log
 import android.view.View
 import android.content.Intent
 import android.os.IBinder
@@ -56,6 +57,12 @@ class WhisperInputService : InputMethodService() {
     private var useOggFormat: Boolean = false
     private var isFirstTime: Boolean = true
 
+    // Live transcription state (only active when the LIVE_TRANSCRIPTION pref is on
+    // and a recording session is running).
+    private var liveModeEnabled: Boolean = false
+    private var liveTranscriber: LiveTranscriber? = null
+    private var liveChunkIndex: Int = 0
+
     private fun transcriptionCallback(text: String?) {
         if (!text.isNullOrEmpty()) {
             currentInputConnection?.commitText(text, 1)
@@ -81,7 +88,7 @@ class WhisperInputService : InputMethodService() {
         val backend = dataStore.data.map { preferences: Preferences ->
             preferences[SPEECH_TO_TEXT_BACKEND] ?: getString(R.string.settings_option_openai_api)
         }.first()
-        
+
         useOggFormat = backend == getString(R.string.settings_option_nvidia_nim)
         if (useOggFormat) {
             recordedAudioFilename = "${externalCacheDir?.absolutePath}/${RECORDED_AUDIO_FILENAME_OGG}"
@@ -90,6 +97,56 @@ class WhisperInputService : InputMethodService() {
             recordedAudioFilename = "${externalCacheDir?.absolutePath}/${RECORDED_AUDIO_FILENAME_M4A}"
             audioMediaType = AUDIO_MEDIA_TYPE_M4A
         }
+    }
+
+    private suspend fun updateLiveMode() {
+        liveModeEnabled = dataStore.data.map { preferences: Preferences ->
+            preferences[LIVE_TRANSCRIPTION] ?: true
+        }.first()
+    }
+
+    // Called when the LiveTranscriber FSM completes a chunk: finalize the current
+    // segment file, pass it to the ordered queue, and keep recording seamlessly.
+    private fun onLiveChunkBoundary() {
+        val manager = recorderManager ?: return
+        val transcriber = liveTranscriber ?: return
+
+        val chunkFilename = "${externalCacheDir?.absolutePath}/chunk_${liveChunkIndex++}" +
+            if (useOggFormat) ".ogg" else ".m4a"
+        val chunkFile = File(recordedAudioFilename)
+        val moved = if (chunkFile.exists()) {
+            try {
+                chunkFile.renameTo(File(chunkFilename))
+            } catch (e: Exception) {
+                Log.w("whisper-input", "chunk rename failed: ${e.message}")
+                false
+            }
+        } else {
+            false
+        }
+
+        // Restart recording into the standard file immediately so no words are lost.
+        if (!manager.restart(this, recordedAudioFilename, useOggFormat)) {
+            Log.w("whisper-input", "recorder restart failed; falling back to single-shot")
+            stopLiveMode()
+            return
+        }
+
+        if (moved) {
+            transcriber.onSegmentReady(File(chunkFilename))
+        }
+    }
+
+    private fun stopLiveMode() {
+        liveTranscriber?.reset()
+        liveTranscriber = null
+        liveModeEnabled = false
+        liveChunkIndex = 0
+    }
+
+    private fun cleanupChunkFiles() {
+        val cacheDir = externalCacheDir ?: return
+        cacheDir.listFiles { file -> file.name.startsWith("chunk_") }?.forEach { it.delete() }
     }
 
     override fun onCreateInputView(): View {
@@ -146,6 +203,29 @@ class WhisperInputService : InputMethodService() {
             return
         }
 
+        // Start a fresh live-transcription session if the setting is enabled.
+        CoroutineScope(Dispatchers.Main).launch {
+            updateLiveMode()
+            if (liveModeEnabled) {
+                cleanupChunkFiles()
+                liveChunkIndex = 0
+                liveTranscriber = LiveTranscriber(
+                    this@WhisperInputService,
+                    { text ->
+                        // Ordered chunk result: commit as it arrives. The keyboard
+                        // stays in Recording state (no reset) — live mode keeps
+                        // listening while text streams in.
+                        if (text.isNotEmpty()) {
+                            currentInputConnection?.commitText(text, 1)
+                        }
+                    },
+                    { message ->
+                        // Chunk failure must not kill the session; show and keep going.
+                        Toast.makeText(this@WhisperInputService, message, Toast.LENGTH_SHORT).show()
+                    })
+            }
+        }
+
         recorderManager!!.start(this, recordedAudioFilename, useOggFormat)
     }
 
@@ -153,23 +233,52 @@ class WhisperInputService : InputMethodService() {
     // this callback is registered to the recorder manager
     private fun onUpdateMicrophoneAmplitude(amplitude: Int) {
         whisperKeyboard.updateMicrophoneAmplitude(amplitude)
+
+        // Feed the live FSM and detect chunk boundaries.
+        val transcriber = liveTranscriber ?: return
+        val before = transcriber.completedChunkCount
+        transcriber.onAmplitude(amplitude)
+        if (transcriber.completedChunkCount > before) {
+            onLiveChunkBoundary()
+        }
     }
 
     private fun onCancelRecording() {
+        stopLiveMode()
         recorderManager!!.stop()
     }
 
     private fun onStartTranscription(attachToEnd: String) {
-        recorderManager!!.stop()
-        whisperTranscriber.startAsync(this,
-            recordedAudioFilename,
-            audioMediaType,
-            attachToEnd,
-            { transcriptionCallback(it) },
-            { transcriptionExceptionCallback(it) })
+        val live = liveTranscriber
+        if (live != null) {
+            // Live mode final press: stop recording, enqueue the final remaining
+            // segment through the ordered queue so its text lands after previous
+            // chunks, then tear the live session down.
+            recorderManager!!.stop()
+            val finalFile = File(recordedAudioFilename)
+            if (finalFile.exists()) {
+                val tailFilename = "${externalCacheDir?.absolutePath}/chunk_${liveChunkIndex++}" +
+                    if (useOggFormat) ".ogg" else ".m4a"
+                if (finalFile.renameTo(File(tailFilename))) {
+                    live.onSegmentReady(File(tailFilename))
+                }
+            }
+            // The queue drains in the background; nothing else to wait on here.
+            // Keyboard resets so the user can keep typing while the tail commits.
+            whisperKeyboard.reset()
+        } else {
+            recorderManager!!.stop()
+            whisperTranscriber.startAsync(this,
+                recordedAudioFilename,
+                audioMediaType,
+                attachToEnd,
+                { transcriptionCallback(it) },
+                { transcriptionExceptionCallback(it) })
+        }
     }
 
     private fun onCancelTranscription() {
+        stopLiveMode()
         whisperTranscriber.stop()
     }
 
@@ -225,6 +334,7 @@ class WhisperInputService : InputMethodService() {
 
     override fun onWindowShown() {
         super.onWindowShown()
+        stopLiveMode()
         whisperTranscriber.stop()
         whisperKeyboard.reset()
         recorderManager!!.stop()
@@ -248,6 +358,7 @@ class WhisperInputService : InputMethodService() {
 
     override fun onWindowHidden() {
         super.onWindowHidden()
+        stopLiveMode()
         whisperTranscriber.stop()
         whisperKeyboard.reset()
         recorderManager!!.stop()
@@ -255,6 +366,7 @@ class WhisperInputService : InputMethodService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopLiveMode()
         whisperTranscriber.stop()
         whisperKeyboard.reset()
         recorderManager!!.stop()
