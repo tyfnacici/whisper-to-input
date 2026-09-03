@@ -1,51 +1,68 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <!-- Base application theme. -->
     <style name="Base.Theme.WhisperToInput" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Brand fallback palette; resolved per light/night configuration.
+             Overridden by Material You dynamic color when available. -->
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorOnPrimary">@color/brand_on_primary</item>
+        <item name="colorPrimaryContainer">@color/brand_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/brand_on_primary_container</item>
+        <item name="colorSecondary">@color/brand_secondary</item>
+        <item name="colorTertiary">@color/brand_tertiary</item>
+        <item name="colorSurface">@color/brand_surface</item>
+        <item name="colorOnSurface">@color/brand_on_surface</item>
+        <item name="colorSurfaceVariant">@color/brand_surface_variant</item>
+        <item name="android:colorBackground">@color/brand_background</item>
+        <item name="colorOnBackground">@color/brand_on_surface</item>
     </style>
 
+    <!-- Keyboard bar styles: resolved from the Material 3 color roles so the
+         IME surface follows light/dark and dynamic color automatically. -->
     <style name="RegularImage">
-        <item name="android:tint">@color/theme_rich_black</item>
+        <item name="android:tint">?attr/colorOnSurfaceVariant</item>
     </style>
 
     <style name="RegularText">
-        <item name="android:textColor">@color/theme_rich_black</item>
-    </style>
-
-    <style name="Background">
-        <item name="android:background">@color/theme_light_grey</item>
-    </style>
-
-    <style name="TopBar">
-        <item name="android:background">@color/theme_rich_black</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:textSize">14sp</item>
     </style>
 
     <!-- Settings Page Styles -->
+    <style name="SettingsSectionHeader">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">24dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:letterSpacing">0.1</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+    </style>
     <style name="SettingsLabel">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:fontFamily">sans-serif</item>
-        <item name="android:textSize">22sp</item>
+        <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
     </style>
     <style name="SettingsDescription">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:textColor">@color/dark_gray</item>
-        <item name="android:textSize">18sp</item>
+        <item name="android:layout_marginBottom">4dp</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:textStyle">italic</item>
     </style>
     <style name="SettingsField">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginBottom">16dp</item>
         <item name="android:inputType">textMultiLine</item>
     </style>
     <style name="SettingsSpinner">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginBottom">16dp</item>
         <item name="android:minHeight">48dp</item>
     </style>
 

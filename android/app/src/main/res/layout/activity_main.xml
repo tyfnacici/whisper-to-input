@@ -27,28 +27,30 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <!-- App name header -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        style="@style/Background"
         android:id="@+id/settings_top_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
+        android:background="?attr/colorSurface"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <TextView
-            style="@style/RegularText"
             android:id="@+id/settings_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:fontFamily="serif"
             android:gravity="bottom"
-            android:text="@string/whisper_to_input_settings_title"
-            android:textSize="24sp"
-            android:textStyle="bold"
+            android:text="@string/app_name"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="28sp"
+            android:textStyle="bold|italic"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/btn_settings_apply"
             app:layout_constraintHorizontal_bias="0.0"
@@ -57,10 +59,10 @@
 
         <Button
             android:id="@+id/btn_settings_apply"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_weight="1"
+            android:layout_marginStart="12dp"
             android:text="@string/settings_btn_apply"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -71,8 +73,11 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:padding="24dp"
+        android:layout_marginTop="8dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp"
+        android:scrollbars="none"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/settings_top_bar">
@@ -81,137 +86,215 @@
             android:id="@+id/settings_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="64dp"
+            android:paddingBottom="32dp"
             android:minHeight="100dp"
             android:orientation="vertical" >
 
-            <!-- Speech to Text Backend -->
+            <!-- ===== Card: Connection ===== -->
             <TextView
-                android:id="@+id/label_speech_to_text_backend"
-                style="@style/SettingsLabel"
-                android:text="@string/settings_speech_to_text_backend" />
-            <TextView
-                android:id="@+id/description_speech_to_text_backend"
-                style="@style/SettingsDescription"
-                android:text="@string/settings_speech_to_text_backend_desc" />
-            <Spinner
-                android:id="@+id/spinner_speech_to_text_backend"
-                style="@style/SettingsSpinner"
-                android:entries="@array/settings_speech_to_text_backend_array" />
+                android:id="@+id/label_section_connection"
+                style="@style/SettingsSectionHeader"
+                android:layout_marginTop="4dp"
+                android:text="@string/settings_section_connection" />
 
-            <!-- Endpoint -->
-            <TextView
-                android:id="@+id/label_endpoint"
-                style="@style/SettingsLabel"
-                android:text="@string/settings_endpoint" />
-            <TextView
-                android:id="@+id/description_endpoint"
-                style="@style/SettingsDescription"
-                android:text="@string/settings_endpoint_desc" />
-            <EditText
-                android:id="@+id/field_endpoint"
-                style="@style/SettingsField"
-                android:hint="@string/settings_endpoint_hint" />
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_connection"
+                style="?attr/materialCardViewOutlinedStyle"
+                app:cardCornerRadius="16dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardElevation="0dp">
 
-            <!-- Language Code -->
-            <TextView
-                android:id="@+id/label_language_code"
-                style="@style/SettingsLabel"
-                android:text="@string/settings_language_code" />
-            <TextView
-                android:id="@+id/description_language_code"
-                style="@style/SettingsDescription"
-                android:text="@string/settings_language_code_desc" />
-            <EditText
-                android:id="@+id/field_language_code"
-                style="@style/SettingsField"
-                android:hint="@string/settings_language_code_hint" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-            <!-- Auto Recording Start -->
-            <TextView
-                android:id="@+id/label_auto_recording_start"
-                style="@style/SettingsLabel"
-                android:text="@string/settings_auto_recording_start" />
-            <TextView
-                android:id="@+id/description_auto_recording_start"
-                style="@style/SettingsDescription"
-                android:text="@string/settings_auto_recording_start_desc" />
-            <Spinner
-                android:id="@+id/spinner_auto_recording_start"
-                style="@style/SettingsSpinner"
-                android:entries="@array/settings_auto_recording_start_array" />
+                    <!-- Speech to Text Backend -->
+                    <TextView
+                        android:id="@+id/label_speech_to_text_backend"
+                        style="@style/SettingsLabel"
+                        android:text="@string/settings_speech_to_text_backend" />
+                    <TextView
+                        android:id="@+id/description_speech_to_text_backend"
+                        style="@style/SettingsDescription"
+                        android:text="@string/settings_speech_to_text_backend_desc" />
+                    <Spinner
+                        android:id="@+id/spinner_speech_to_text_backend"
+                        style="@style/SettingsSpinner"
+                        android:entries="@array/settings_speech_to_text_backend_array" />
 
-            <!-- Live Transcription -->
-            <TextView
-                android:id="@+id/label_live_transcription"
-                style="@style/SettingsLabel"
-                android:text="@string/settings_live_transcription" />
-            <TextView
-                android:id="@+id/description_live_transcription"
-                style="@style/SettingsDescription"
-                android:text="@string/settings_live_transcription_desc" />
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/switch_live_transcription"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:minHeight="48dp" />
+                    <!-- Endpoint -->
+                    <TextView
+                        android:id="@+id/label_endpoint"
+                        style="@style/SettingsLabel"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/settings_endpoint" />
+                    <TextView
+                        android:id="@+id/description_endpoint"
+                        style="@style/SettingsDescription"
+                        android:text="@string/settings_endpoint_desc" />
+                    <EditText
+                        android:id="@+id/field_endpoint"
+                        style="@style/SettingsField"
+                        android:hint="@string/settings_endpoint_hint" />
 
-            <!-- Auto Switch Back -->
-            <TextView
-                android:id="@+id/label_auto_switch_back"
-                style="@style/SettingsLabel"
-                android:text="@string/settings_auto_switch_back" />
-            <TextView
-                android:id="@+id/description_auto_switch_back"
-                style="@style/SettingsDescription"
-                android:text="@string/settings_auto_switch_back_desc" />
-            <Spinner
-                android:id="@+id/spinner_auto_switch_back"
-                style="@style/SettingsSpinner"
-                android:entries="@array/settings_auto_switch_back_array" />
+                    <!-- Language Code -->
+                    <TextView
+                        android:id="@+id/label_language_code"
+                        style="@style/SettingsLabel"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/settings_language_code" />
+                    <TextView
+                        android:id="@+id/description_language_code"
+                        style="@style/SettingsDescription"
+                        android:text="@string/settings_language_code_desc" />
+                    <EditText
+                        android:id="@+id/field_language_code"
+                        style="@style/SettingsField"
+                        android:hint="@string/settings_language_code_hint" />
 
-            <!-- Postprocessing -->
-            <TextView
-                android:id="@+id/label_postprocessing"
-                style="@style/SettingsLabel"
-                android:text="@string/settings_postprocessing" />
-            <TextView
-                android:id="@+id/description_postprocessing"
-                style="@style/SettingsDescription"
-                android:text="@string/settings_postprocessing_desc" />
-            <Spinner
-                android:id="@+id/spinner_postprocessing"
-                style="@style/SettingsSpinner"
-                android:entries="@array/settings_postprocessing_array" />
+                </LinearLayout>
 
-            <!-- Add Trailing Space -->
-            <TextView
-                android:id="@+id/label_add_trailing_space"
-                style="@style/SettingsLabel"
-                android:text="@string/settings_add_trailing_space" />
-            <TextView
-                android:id="@+id/description_add_trailing_space"
-                style="@style/SettingsDescription"
-                android:text="@string/settings_add_trailing_space_desc" />
-            <Spinner
-                android:id="@+id/spinner_add_trailing_space"
-                style="@style/SettingsSpinner"
-                android:entries="@array/settings_add_trailing_space_array" />
+            </com.google.android.material.card.MaterialCardView>
 
-            <!-- Request Timeout -->
+            <!-- ===== Card: Transcription ===== -->
             <TextView
-                android:id="@+id/label_request_timeout"
-                style="@style/SettingsLabel"
-                android:text="@string/settings_request_timeout" />
+                android:id="@+id/label_section_transcription"
+                style="@style/SettingsSectionHeader"
+                android:text="@string/settings_section_transcription" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_transcription"
+                style="?attr/materialCardViewOutlinedStyle"
+                app:cardCornerRadius="16dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Request Timeout -->
+                    <TextView
+                        android:id="@+id/label_request_timeout"
+                        style="@style/SettingsLabel"
+                        android:text="@string/settings_request_timeout" />
+                    <TextView
+                        android:id="@+id/description_request_timeout"
+                        style="@style/SettingsDescription"
+                        android:text="@string/settings_request_timeout_desc" />
+                    <Spinner
+                        android:id="@+id/spinner_request_timeout"
+                        style="@style/SettingsSpinner"
+                        android:entries="@array/settings_request_timeout_array" />
+
+                    <!-- Live Transcription -->
+                    <TextView
+                        android:id="@+id/label_live_transcription"
+                        style="@style/SettingsLabel"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/settings_live_transcription" />
+                    <TextView
+                        android:id="@+id/description_live_transcription"
+                        style="@style/SettingsDescription"
+                        android:text="@string/settings_live_transcription_desc" />
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switch_live_transcription"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp" />
+
+                    <!-- Postprocessing -->
+                    <TextView
+                        android:id="@+id/label_postprocessing"
+                        style="@style/SettingsLabel"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/settings_postprocessing" />
+                    <TextView
+                        android:id="@+id/description_postprocessing"
+                        style="@style/SettingsDescription"
+                        android:text="@string/settings_postprocessing_desc" />
+                    <Spinner
+                        android:id="@+id/spinner_postprocessing"
+                        style="@style/SettingsSpinner"
+                        android:entries="@array/settings_postprocessing_array" />
+
+                    <!-- Add Trailing Space -->
+                    <TextView
+                        android:id="@+id/label_add_trailing_space"
+                        style="@style/SettingsLabel"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/settings_add_trailing_space" />
+                    <TextView
+                        android:id="@+id/description_add_trailing_space"
+                        style="@style/SettingsDescription"
+                        android:text="@string/settings_add_trailing_space_desc" />
+                    <Spinner
+                        android:id="@+id/spinner_add_trailing_space"
+                        style="@style/SettingsSpinner"
+                        android:entries="@array/settings_add_trailing_space_array" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== Card: Behavior ===== -->
             <TextView
-                android:id="@+id/description_request_timeout"
-                style="@style/SettingsDescription"
-                android:text="@string/settings_request_timeout_desc" />
-            <Spinner
-                android:id="@+id/spinner_request_timeout"
-                style="@style/SettingsSpinner"
-                android:entries="@array/settings_request_timeout_array" />
+                android:id="@+id/label_section_behavior"
+                style="@style/SettingsSectionHeader"
+                android:text="@string/settings_section_behavior" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_behavior"
+                style="?attr/materialCardViewOutlinedStyle"
+                app:cardCornerRadius="16dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Auto Recording Start -->
+                    <TextView
+                        android:id="@+id/label_auto_recording_start"
+                        style="@style/SettingsLabel"
+                        android:text="@string/settings_auto_recording_start" />
+                    <TextView
+                        android:id="@+id/description_auto_recording_start"
+                        style="@style/SettingsDescription"
+                        android:text="@string/settings_auto_recording_start_desc" />
+                    <Spinner
+                        android:id="@+id/spinner_auto_recording_start"
+                        style="@style/SettingsSpinner"
+                        android:entries="@array/settings_auto_recording_start_array" />
+
+                    <!-- Auto Switch Back -->
+                    <TextView
+                        android:id="@+id/label_auto_switch_back"
+                        style="@style/SettingsLabel"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/settings_auto_switch_back" />
+                    <TextView
+                        android:id="@+id/description_auto_switch_back"
+                        style="@style/SettingsDescription"
+                        android:text="@string/settings_auto_switch_back_desc" />
+                    <Spinner
+                        android:id="@+id/spinner_auto_switch_back"
+                        style="@style/SettingsSpinner"
+                        android:entries="@array/settings_auto_switch_back_array" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </ScrollView>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand fallback palette (night). Used when Material You dynamic color
+         is unavailable. -->
+    <color name="brand_background">#101713</color>
+    <color name="brand_primary">#A8CBB4</color>
+    <color name="brand_on_primary">#101713</color>
+    <color name="brand_secondary">#5A7A68</color>
+    <color name="brand_tertiary">#F4C95D</color>
+    <color name="brand_surface">#16211B</color>
+    <color name="brand_on_surface">#FAF7F0</color>
+    <color name="brand_surface_variant">#1E2B23</color>
+    <color name="brand_primary_container">#2C4939</color>
+    <color name="brand_on_primary_container">#C9E8D5</color>
+</resources>
