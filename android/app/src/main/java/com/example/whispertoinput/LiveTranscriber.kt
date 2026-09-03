@@ -70,11 +70,11 @@ class LiveTranscriber(
         private const val TAG = "LiveTranscriber"
 
         // Accumulated speech time required before trailing silence ends a chunk.
-        private const val MIN_SPEECH_MS = 2000L
+        private const val MIN_SPEECH_MS = 800L
         // Silence duration (after enough speech) that ends a chunk.
-        private const val END_SILENCE_MS = 800L
+        private const val END_SILENCE_MS = 500L
         // A chunk never lasts longer than this, even without trailing silence.
-        private const val MAX_CHUNK_MS = 15000L
+        private const val MAX_CHUNK_MS = 2000L
         // Cap for a single amplitude-report interval so stalled feeds cannot
         // inject huge time deltas into the FSM.
         private const val MAX_AMPLITUDE_STEP_MS = 1000L

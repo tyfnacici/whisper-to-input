@@ -28,8 +28,8 @@
     android:layout_gravity="bottom"
     android:background="@drawable/keyboard_bar_background"
     android:clipToPadding="false"
-    android:paddingTop="6dp"
-    android:paddingBottom="10dp">
+    android:paddingTop="4dp"
+    android:paddingBottom="8dp">
 
     <View
         android:id="@+id/view_top_bar"
@@ -59,29 +59,29 @@
     <ImageButton
         style="@style/RegularImage"
         android:id="@+id/btn_space_bar"
-        android:layout_width="123dp"
-        android:layout_height="35dp"
-        android:layout_marginTop="6dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        android:layout_width="120dp"
+        android:layout_height="28dp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/space_bar_background"
         android:contentDescription="@string/desc_space_bar"
         android:scaleType="fitCenter"
-        android:src="@drawable/btn_space_bar"
+        android:src="@android:color/transparent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btn_mic_frame"/>
 
     <FrameLayout
         android:id="@+id/btn_mic_frame"
-        android:layout_width="92dp"
-        android:layout_height="92dp"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/label_status">
 
         <ImageButton
             android:id="@+id/btn_mic"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:layout_gravity="center_horizontal|center_vertical"
             android:background="@drawable/fab_background"
             android:contentDescription="@string/start_speech_to_text"
@@ -109,8 +109,8 @@
 
             <ImageView
                 android:id="@+id/mic_ripple_0"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:alpha="0"
                 android:src="@drawable/mic_ripple_0"
                 android:tint="?attr/colorPrimary"
@@ -121,8 +121,8 @@
 
             <ImageView
                 android:id="@+id/mic_ripple_1"
-                android:layout_width="72dp"
-                android:layout_height="72dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
                 android:alpha="0"
                 android:src="@drawable/mic_ripple_1"
                 android:tint="?attr/colorPrimary"
@@ -133,8 +133,8 @@
 
             <ImageView
                 android:id="@+id/mic_ripple_2"
-                android:layout_width="80dp"
-                android:layout_height="80dp"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
                 android:alpha="0"
                 android:src="@drawable/mic_ripple_2"
                 android:tint="?attr/colorPrimary"
@@ -145,8 +145,8 @@
 
             <ImageView
                 android:id="@+id/mic_ripple_3"
-                android:layout_width="88dp"
-                android:layout_height="88dp"
+                android:layout_width="62dp"
+                android:layout_height="62dp"
                 android:alpha="0"
                 android:src="@drawable/mic_ripple_3"
                 android:tint="?attr/colorPrimary"
@@ -164,8 +164,8 @@
     <ImageButton
         style="@style/RegularImage"
         android:id="@+id/btn_enter"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/start_transcribing"
         android:scaleType="fitCenter"
@@ -211,8 +211,8 @@
     <com.example.whispertoinput.keyboard.BackspaceButton
         style="@style/RegularImage"
         android:id="@+id/btn_backspace"
-        android:layout_width="56dp"
-        android:layout_height="48dp"
+        android:layout_width="44dp"
+        android:layout_height="40dp"
         android:layout_marginStart="12dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/backspace_button_hint"
@@ -229,10 +229,10 @@
     <ImageButton
         style="@style/RegularImage"
         android:id="@+id/btn_previous_ime"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
         android:layout_marginStart="8dp"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="4dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/btn_previous_ime_hint"
         android:scaleType="fitCenter"
@@ -243,8 +243,8 @@
     <ImageButton
         style="@style/RegularImage"
         android:id="@+id/btn_settings"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/btn_previous_ime_hint"
         android:scaleType="fitCenter"
