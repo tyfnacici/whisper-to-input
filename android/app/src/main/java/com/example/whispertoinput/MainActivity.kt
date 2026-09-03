@@ -326,8 +326,6 @@ class MainActivity : AppCompatActivity() {
                                 ) {
                                     endpointEditText.setText(getString(R.string.settings_option_nvidia_nim_default_endpoint))
                                 }
-                                val languageCodeEditText: EditText = findViewById<EditText>(R.id.field_language_code)
-                                languageCodeEditText.setText(getString(R.string.settings_option_nvidia_nim_default_language))
                             }
                         }
                     }
@@ -367,7 +365,6 @@ class MainActivity : AppCompatActivity() {
                     getString(R.string.settings_option_nvidia_nim)
                 ), getString(R.string.settings_option_openai_api)),
                 SettingText(R.id.field_endpoint, ENDPOINT, getString(R.string.settings_option_openai_api_default_endpoint)),
-                SettingText(R.id.field_language_code, LANGUAGE_CODE, getString(R.string.settings_option_openai_api_default_language)),
                 SettingDropdown(R.id.spinner_auto_recording_start, AUTO_RECORDING_START, hashMapOf(
                     getString(R.string.settings_option_yes) to true,
                     getString(R.string.settings_option_no) to false,
@@ -377,15 +374,6 @@ class MainActivity : AppCompatActivity() {
                     getString(R.string.settings_option_yes) to true,
                     getString(R.string.settings_option_no) to false,
                 ), false),
-                SettingDropdown(R.id.spinner_add_trailing_space, ADD_TRAILING_SPACE, hashMapOf(
-                    getString(R.string.settings_option_yes) to true,
-                    getString(R.string.settings_option_no) to false,
-                ), false),
-                SettingStringDropdown(R.id.spinner_postprocessing, POSTPROCESSING, listOf(
-                    getString(R.string.settings_option_to_traditional),
-                    getString(R.string.settings_option_to_simplified),
-                    getString(R.string.settings_option_no_conversion)
-                ), getString(R.string.settings_option_to_traditional)),
                 SettingStringDropdown(R.id.spinner_request_timeout, REQUEST_TIMEOUT, listOf(
                     getString(R.string.settings_option_timeout_auto),
                     getString(R.string.settings_option_timeout_60s),
