@@ -37,6 +37,7 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doOnTextChanged
 import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.color.DynamicColors
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -70,9 +71,22 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyDynamicColors()
         setContentView(R.layout.activity_main)
         setupSettingItems()
         checkPermissions()
+    }
+
+    // Enables Material You dynamic color (Android 12+) for all app activities.
+    // Registered once per application process; a no-op on older Android versions.
+    private fun applyDynamicColors() {
+        if (dynamicColorsApplied) return
+        DynamicColors.applyToActivitiesIfAvailable(application)
+        dynamicColorsApplied = true
+    }
+
+    companion object {
+        private var dynamicColorsApplied = false
     }
 
     // The onClick event of the grant permission button.

@@ -27,11 +27,13 @@ import android.content.Intent
 import android.os.IBinder
 import android.text.TextUtils
 import android.view.KeyEvent
+import android.view.LayoutInflater
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.datastore.preferences.core.Preferences
 import com.example.whispertoinput.keyboard.WhisperKeyboard
 import com.example.whispertoinput.recorder.RecorderManager
+import com.google.android.material.color.DynamicColors
 import com.github.liuyueyi.quick.transfer.ChineseUtils
 import com.github.liuyueyi.quick.transfer.constants.TransType
 import kotlinx.coroutines.CoroutineScope
@@ -178,8 +180,13 @@ class WhisperInputService : InputMethodService() {
             onUpdateMicrophoneAmplitude(amplitude)
         }
 
+        // Wrap the service context with Material You dynamic colors when
+        // available, so the keyboard view picks up the wallpaper palette.
+        val themedContext = DynamicColors.wrapContextIfAvailable(this)
+        val themedLayoutInflater = LayoutInflater.from(themedContext)
+
         // Returns the keyboard after setting it up and inflating its layout
-        return whisperKeyboard.setup(layoutInflater,
+        return whisperKeyboard.setup(themedLayoutInflater,
             shouldOfferImeSwitch,
             { onStartRecording() },
             { onCancelRecording() },
