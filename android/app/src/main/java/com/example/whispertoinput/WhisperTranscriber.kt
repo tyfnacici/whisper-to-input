@@ -20,6 +20,7 @@
 package com.example.whispertoinput
 
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.util.Log
 import androidx.datastore.preferences.core.Preferences
 import kotlinx.coroutines.*
@@ -33,6 +34,8 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
+import java.util.concurrent.TimeUnit
+import kotlin.math.ceil
 import com.github.liuyueyi.quick.transfer.ChineseUtils
 
 class WhisperTranscriber {
@@ -43,7 +46,8 @@ class WhisperTranscriber {
         val apiKey: String,
         val model: String,
         val postprocessing: String,
-        val addTrailingSpace: Boolean
+        val addTrailingSpace: Boolean,
+        val requestTimeout: String
     )
 
     private val TAG = "WhisperTranscriber"
@@ -59,7 +63,7 @@ class WhisperTranscriber {
     ) {
         suspend fun makeWhisperRequest(): String {
             // Retrieve configs
-            val (endpoint, languageCode, speechToTextBackend, apiKey, model, postprocessing, addTrailingSpace) = context.dataStore.data.map { preferences: Preferences ->
+            val (endpoint, languageCode, speechToTextBackend, apiKey, model, postprocessing, addTrailingSpace, requestTimeout) = context.dataStore.data.map { preferences: Preferences ->
                 Config(
                     preferences[ENDPOINT] ?: "",
                     preferences[LANGUAGE_CODE] ?: "",
@@ -67,7 +71,8 @@ class WhisperTranscriber {
                     preferences[API_KEY] ?: "",
                     preferences[MODEL] ?: "",
                     preferences[POSTPROCESSING] ?: context.getString(R.string.settings_option_no_conversion),
-                    preferences[ADD_TRAILING_SPACE] ?: false
+                    preferences[ADD_TRAILING_SPACE] ?: false,
+                    preferences[REQUEST_TIMEOUT] ?: context.getString(R.string.settings_option_timeout_auto)
                 )
             }.first()
 
@@ -77,7 +82,15 @@ class WhisperTranscriber {
             }
 
             // Make request
-            val client = OkHttpClient()
+            // The read timeout adapts to the recording length so that long dictations
+            // are not cut off by the client (the self-hosted server may need a while
+            // to transcribe). Fixed overrides are also available in the settings.
+            val readTimeoutSeconds: Long = resolveReadTimeoutSeconds(context, requestTimeout, filename)
+            val client = OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(readTimeoutSeconds, TimeUnit.SECONDS)
+                .build()
             val request = buildWhisperRequest(
                 context,
                 filename,
@@ -155,6 +168,41 @@ class WhisperTranscriber {
 
     fun stop() {
         registerTranscriptionJob(null)
+    }
+
+    // Resolves the read timeout (in seconds) for the transcription request.
+    // - "Auto": adapts to the audio duration (duration * 4 + 30 seconds),
+    //   falling back to 10 minutes if the duration cannot be determined.
+    // - Fixed values (60s, 300s, 600s) simply override the timeout.
+    private fun resolveReadTimeoutSeconds(context: Context, requestTimeout: String, filename: String): Long {
+        if (requestTimeout == context.getString(R.string.settings_option_timeout_60s)) return 60L
+        if (requestTimeout == context.getString(R.string.settings_option_timeout_300s)) return 300L
+        if (requestTimeout == context.getString(R.string.settings_option_timeout_600s)) return 600L
+        // "Auto" (default) and any unknown value: adaptive timeout
+        val audioDurationSeconds: Long? = getAudioDurationSeconds(filename)
+        return if (audioDurationSeconds == null) {
+            // Fall back to 10 minutes if duration cannot be determined
+            600L
+        } else {
+            audioDurationSeconds * 4 + 30L
+        }
+    }
+
+    // Returns the duration of the recorded audio file in seconds, or null if it
+    // cannot be determined.
+    private fun getAudioDurationSeconds(filename: String): Long? {
+        val retriever = MediaMetadataRetriever()
+        return try {
+            retriever.setDataSource(filename)
+            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()?.let { milliseconds ->
+                ceil(milliseconds / 1000.0).toLong()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Unable to determine audio duration: ${e.message}")
+            null
+        } finally {
+            retriever.release()
+        }
     }
 
     private fun registerTranscriptionJob(job: Job?) {

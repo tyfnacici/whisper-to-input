@@ -87,6 +87,18 @@
         <item>@string/settings_option_to_simplified</item>
         <item>@string/settings_option_no_conversion</item>
     </string-array>
+    <string name="settings_request_timeout">Request Timeout</string>
+    <string name="settings_request_timeout_desc">Maximum time to wait for the transcription result. Auto adjusts the timeout to the recording length.</string>
+    <string name="settings_option_timeout_auto">Auto</string>
+    <string name="settings_option_timeout_60s">60s</string>
+    <string name="settings_option_timeout_300s">300s</string>
+    <string name="settings_option_timeout_600s">600s</string>
+    <string-array name="settings_request_timeout_array">
+        <item>@string/settings_option_timeout_auto</item>
+        <item>@string/settings_option_timeout_60s</item>
+        <item>@string/settings_option_timeout_300s</item>
+        <item>@string/settings_option_timeout_600s</item>
+    </string-array>
     <string name="desc_space_bar">Space Bar</string>
 
 </resources>

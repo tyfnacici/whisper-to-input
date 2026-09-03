@@ -63,6 +63,7 @@ val AUTO_RECORDING_START = booleanPreferencesKey("is-auto-recording-start")
 val AUTO_SWITCH_BACK = booleanPreferencesKey("auto-switch-back")
 val ADD_TRAILING_SPACE = booleanPreferencesKey("add-trailing-space")
 val POSTPROCESSING = stringPreferencesKey("postprocessing")
+val REQUEST_TIMEOUT = stringPreferencesKey("request-timeout")
 
 class MainActivity : AppCompatActivity() {
     private var setupSettingItemsDone: Boolean = false
@@ -344,6 +345,12 @@ class MainActivity : AppCompatActivity() {
                     getString(R.string.settings_option_to_simplified),
                     getString(R.string.settings_option_no_conversion)
                 ), getString(R.string.settings_option_to_traditional)),
+                SettingStringDropdown(R.id.spinner_request_timeout, REQUEST_TIMEOUT, listOf(
+                    getString(R.string.settings_option_timeout_auto),
+                    getString(R.string.settings_option_timeout_60s),
+                    getString(R.string.settings_option_timeout_300s),
+                    getString(R.string.settings_option_timeout_600s)
+                ), getString(R.string.settings_option_timeout_auto)),
             )
             val btnApply: Button = findViewById(R.id.btn_settings_apply)
             btnApply.isEnabled = false
