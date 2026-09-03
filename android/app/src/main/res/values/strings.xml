@@ -26,6 +26,9 @@
     <!-- Settings -->
     <string name="whisper_to_input_settings_title">Whisper To Input Settings</string>
     <string name="settings_btn_apply">Apply</string>
+    <string name="settings_section_connection">Connection</string>
+    <string name="settings_section_transcription">Transcription</string>
+    <string name="settings_section_behavior">Behavior</string>
     <string name="settings_speech_to_text_backend">Speech to Text Backend</string>
     <string name="settings_speech_to_text_backend_desc">Use the official OpenAI API, Whisper ASR Webservice, or NVIDIA NIM backend.</string>
     <string name="settings_option_openai_api">OpenAI API</string>
