@@ -43,8 +43,6 @@ class WhisperTranscriber {
         val endpoint: String,
         val languageCode: String,
         val speechToTextBackend: String,
-        val apiKey: String,
-        val model: String,
         val postprocessing: String,
         val addTrailingSpace: Boolean,
         val requestTimeout: String
@@ -63,13 +61,11 @@ class WhisperTranscriber {
     ) {
         suspend fun makeWhisperRequest(): String {
             // Retrieve configs
-            val (endpoint, languageCode, speechToTextBackend, apiKey, model, postprocessing, addTrailingSpace, requestTimeout) = context.dataStore.data.map { preferences: Preferences ->
+            val (endpoint, languageCode, speechToTextBackend, postprocessing, addTrailingSpace, requestTimeout) = context.dataStore.data.map { preferences: Preferences ->
                 Config(
                     preferences[ENDPOINT] ?: "",
                     preferences[LANGUAGE_CODE] ?: "",
                     preferences[SPEECH_TO_TEXT_BACKEND] ?: context.getString(R.string.settings_option_openai_api),
-                    preferences[API_KEY] ?: "",
-                    preferences[MODEL] ?: "",
                     preferences[POSTPROCESSING] ?: context.getString(R.string.settings_option_no_conversion),
                     preferences[ADD_TRAILING_SPACE] ?: false,
                     preferences[REQUEST_TIMEOUT] ?: context.getString(R.string.settings_option_timeout_auto)
@@ -97,9 +93,7 @@ class WhisperTranscriber {
                 mediaType,
                 speechToTextBackend,
                 endpoint,
-                languageCode,
-                apiKey,
-                model
+                languageCode
             )
             val response = client.newCall(request).execute()
 
@@ -216,9 +210,7 @@ class WhisperTranscriber {
         mediaType: String,
         speechToTextBackend: String,
         endpoint: String,
-        languageCode: String,
-        apiKey: String,
-        model: String
+        languageCode: String
     ): Request {
         // Please refer to the following for the endpoint/payload definitions:
         // OpenAI API:
@@ -259,7 +251,6 @@ class WhisperTranscriber {
             }
             // Add backend-specific parameters to payload
             if (speechToTextBackend == context.getString(R.string.settings_option_openai_api)) {
-                addFormDataPart("model", model)
                 addFormDataPart("response_format", "text")
             }
             if (speechToTextBackend == context.getString(R.string.settings_option_nvidia_nim)) {
@@ -269,13 +260,6 @@ class WhisperTranscriber {
         }.build()
 
         val requestHeaders: Headers = Headers.Builder().apply {
-            if (speechToTextBackend == context.getString(R.string.settings_option_openai_api)) {
-                // Foolproof message
-                if (apiKey == "") {
-                    throw Exception(context.getString(R.string.error_apikey_unset))
-                }
-                add("Authorization", "Bearer $apiKey")
-            }
             add("Content-Type", "multipart/form-data")
         }.build()
 

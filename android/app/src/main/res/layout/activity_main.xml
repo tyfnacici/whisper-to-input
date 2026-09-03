@@ -113,34 +113,6 @@
                 style="@style/SettingsField"
                 android:hint="@string/settings_endpoint_hint" />
 
-            <!-- API Key -->
-            <TextView
-                android:id="@+id/label_api_key"
-                style="@style/SettingsLabel"
-                android:text="@string/settings_api_key" />
-            <TextView
-                android:id="@+id/description_api_key"
-                style="@style/SettingsDescription"
-                android:text="@string/settings_api_key_desc" />
-            <EditText
-                android:id="@+id/field_api_key"
-                style="@style/SettingsField"
-                android:hint="@string/settings_api_key_hint" />
-
-            <!-- Model -->
-            <TextView
-                android:id="@+id/label_model"
-                style="@style/SettingsLabel"
-                android:text="@string/settings_model" />
-            <TextView
-                android:id="@+id/description_model"
-                style="@style/SettingsDescription"
-                android:text="@string/settings_model_desc" />
-            <EditText
-                android:id="@+id/field_model"
-                style="@style/SettingsField"
-                android:hint="@string/settings_model_hint" />
-
             <!-- Language Code -->
             <TextView
                 android:id="@+id/label_language_code"

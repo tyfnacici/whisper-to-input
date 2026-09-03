@@ -22,7 +22,6 @@
 
     <!-- Warning and Error Messages -->
     <string name="error_endpoint_unset">Error: Endpoint is not set in settings.</string>
-    <string name="error_apikey_unset">Error: OpenAI API Key is not set in settings.</string>
 
     <!-- Settings -->
     <string name="whisper_to_input_settings_title">Whisper To Input Settings</string>
@@ -31,14 +30,11 @@
     <string name="settings_speech_to_text_backend_desc">Use the official OpenAI API, Whisper ASR Webservice, or NVIDIA NIM backend.</string>
     <string name="settings_option_openai_api">OpenAI API</string>
     <string name="settings_option_openai_api_default_endpoint">https://api.openai.com/v1/audio/transcriptions</string>
-    <string name="settings_option_openai_api_default_model">whisper-1</string>
     <string name="settings_option_openai_api_default_language">auto</string>
     <string name="settings_option_whisper_asr_webservice">Whisper ASR Webservice</string>
     <string name="settings_option_whisper_asr_webservice_default_endpoint">http://localhost:9000/asr</string>
-    <string name="settings_option_whisper_asr_webservice_default_model"></string> <!-- Empty default model -->
     <string name="settings_option_nvidia_nim">NVIDIA NIM</string>
     <string name="settings_option_nvidia_nim_default_endpoint">http://localhost:9000/v1/audio/transcriptions</string>
-    <string name="settings_option_nvidia_nim_default_model"></string> <!-- Empty default model -->
     <string name="settings_option_nvidia_nim_default_language">multi</string> <!-- Empty default language -->
     <string-array name="settings_speech_to_text_backend_array">
         <item>@string/settings_option_openai_api</item>
@@ -51,12 +47,6 @@
     <string name="settings_language_code">Language Code</string>
     <string name="settings_language_code_desc">The language code to be included in the request payload (e.g., en, zh).</string>
     <string name="settings_language_code_hint">Enter Language Code (e.g., en, zh)</string>
-    <string name="settings_api_key">API Key</string>
-    <string name="settings_api_key_desc">The official OpenAI API Key to be used in requests.</string>
-    <string name="settings_api_key_hint">Enter OpenAI API Key…</string>
-    <string name="settings_model">Model</string>
-    <string name="settings_model_desc">The model to use for transcription (e.g., whisper-1).</string>
-    <string name="settings_model_hint">Enter model name (e.g., whisper-1)</string>
     <string name="settings_option_yes">Yes</string>
     <string name="settings_option_no">No</string>
     <string name="settings_auto_recording_start">Auto Recording Start</string>

@@ -56,8 +56,6 @@ Then configure the app:
 ```text
 Speech to Text Backend:  OpenAI API
 Endpoint:                http://<SERVER_IP>:8814/inference
-API Key:                 x          (ignored by whisper.cpp)
-Model:                   whisper-1  (ignored by whisper.cpp)
 Language Code:                      (leave empty for auto-detect)
 ```
 
