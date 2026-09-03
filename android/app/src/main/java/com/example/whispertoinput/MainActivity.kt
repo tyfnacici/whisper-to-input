@@ -36,6 +36,7 @@ import android.widget.Spinner
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doOnTextChanged
+import com.google.android.material.materialswitch.MaterialSwitch
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -57,9 +58,8 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "se
 val SPEECH_TO_TEXT_BACKEND = stringPreferencesKey("speech-to-text-backend")
 val ENDPOINT = stringPreferencesKey("endpoint")
 val LANGUAGE_CODE = stringPreferencesKey("language-code")
-val API_KEY = stringPreferencesKey("api-key")
-val MODEL = stringPreferencesKey("model")
 val AUTO_RECORDING_START = booleanPreferencesKey("is-auto-recording-start")
+val LIVE_TRANSCRIPTION = booleanPreferencesKey("live-transcription")
 val AUTO_SWITCH_BACK = booleanPreferencesKey("auto-switch-back")
 val ADD_TRAILING_SPACE = booleanPreferencesKey("add-trailing-space")
 val POSTPROCESSING = stringPreferencesKey("postprocessing")
@@ -240,6 +240,40 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    inner class SettingSwitch(
+        private val viewId: Int,
+        private val preferenceKey: Preferences.Key<Boolean>,
+        private val defaultValue: Boolean = true
+    ): SettingItem() {
+        override fun setup(): Job {
+            return CoroutineScope(Dispatchers.Main).launch {
+                val btnApply: Button = findViewById(R.id.btn_settings_apply)
+                val switch = findViewById<MaterialSwitch>(viewId)
+                switch.isEnabled = false
+                switch.setOnCheckedChangeListener { _, _ ->
+                    if (!setupSettingItemsDone) return@setOnCheckedChangeListener
+                    isDirty = true
+                    btnApply.isEnabled = true
+                }
+
+                // Read data. If none, apply default value.
+                val settingValue: Boolean? = readSetting(preferenceKey)
+                val value: Boolean = settingValue ?: defaultValue
+                if (settingValue == null) {
+                    writeSetting(preferenceKey, defaultValue)
+                }
+                switch.isChecked = value
+                switch.isEnabled = true
+            }
+        }
+        override suspend fun apply() {
+            if (!isDirty) return
+            val newValue: Boolean = findViewById<MaterialSwitch>(viewId).isChecked
+            writeSetting(preferenceKey, newValue)
+            isDirty = false
+        }
+    }
+
     inner class SettingStringDropdown(
         private val viewId: Int,
         private val preferenceKey: Preferences.Key<String>,
@@ -262,8 +296,6 @@ class MainActivity : AppCompatActivity() {
                             if (selectedItem == getString(R.string.settings_option_openai_api)) {
                                 val endpointEditText: EditText = findViewById<EditText>(R.id.field_endpoint)
                                 endpointEditText.setText(getString(R.string.settings_option_openai_api_default_endpoint))
-                                val modelEditText: EditText = findViewById<EditText>(R.id.field_model)
-                                modelEditText.setText(getString(R.string.settings_option_openai_api_default_model))
                             } else if (selectedItem == getString(R.string.settings_option_whisper_asr_webservice)) {
                                 val endpointEditText: EditText = findViewById<EditText>(R.id.field_endpoint)
                                 if (endpointEditText.text.isEmpty() ||
@@ -272,8 +304,6 @@ class MainActivity : AppCompatActivity() {
                                 ) {
                                     endpointEditText.setText(getString(R.string.settings_option_whisper_asr_webservice_default_endpoint))
                                 }
-                                val modelEditText: EditText = findViewById<EditText>(R.id.field_model)
-                                modelEditText.setText(getString(R.string.settings_option_whisper_asr_webservice_default_model))
                             } else if (selectedItem == getString(R.string.settings_option_nvidia_nim)) {
                                 val endpointEditText: EditText = findViewById<EditText>(R.id.field_endpoint)
                                 if (endpointEditText.text.isEmpty() ||
@@ -282,8 +312,6 @@ class MainActivity : AppCompatActivity() {
                                 ) {
                                     endpointEditText.setText(getString(R.string.settings_option_nvidia_nim_default_endpoint))
                                 }
-                                val modelEditText: EditText = findViewById<EditText>(R.id.field_model)
-                                modelEditText.setText(getString(R.string.settings_option_nvidia_nim_default_model))
                                 val languageCodeEditText: EditText = findViewById<EditText>(R.id.field_language_code)
                                 languageCodeEditText.setText(getString(R.string.settings_option_nvidia_nim_default_language))
                             }
@@ -326,12 +354,11 @@ class MainActivity : AppCompatActivity() {
                 ), getString(R.string.settings_option_openai_api)),
                 SettingText(R.id.field_endpoint, ENDPOINT, getString(R.string.settings_option_openai_api_default_endpoint)),
                 SettingText(R.id.field_language_code, LANGUAGE_CODE, getString(R.string.settings_option_openai_api_default_language)),
-                SettingText(R.id.field_api_key, API_KEY),
-                SettingText(R.id.field_model, MODEL, getString(R.string.settings_option_openai_api_default_model)),
                 SettingDropdown(R.id.spinner_auto_recording_start, AUTO_RECORDING_START, hashMapOf(
                     getString(R.string.settings_option_yes) to true,
                     getString(R.string.settings_option_no) to false,
                 )),
+                SettingSwitch(R.id.switch_live_transcription, LIVE_TRANSCRIPTION, true),
                 SettingDropdown(R.id.spinner_auto_switch_back, AUTO_SWITCH_BACK, hashMapOf(
                     getString(R.string.settings_option_yes) to true,
                     getString(R.string.settings_option_no) to false,

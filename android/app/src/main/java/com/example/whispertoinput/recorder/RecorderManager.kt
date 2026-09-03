@@ -122,6 +122,30 @@ class RecorderManager(context: Context) {
         microphoneAmplitudeUpdateJob = null
     }
 
+    // Finalizes the current recording segment and immediately starts recording
+    // into a fresh file, keeping the recording session alive (used by live
+    // transcription for chunk rotation). Returns true on success; false means
+    // the caller should fall back to the single-shot flow.
+    fun restart(context: Context, filename: String, useOggFormat: Boolean = false): Boolean {
+        try {
+            recorder?.stop()
+        } catch (e: Exception) {
+            // stop() throws if the segment has no valid data (< 1s); the restart
+            // can still proceed since a fresh file is used either way.
+            Log.w("whisper-input", "restart stop() failed: ${e.message}")
+        }
+        recorder?.release()
+        recorder = null
+
+        return try {
+            start(context, filename, useOggFormat)
+            true
+        } catch (e: Exception) {
+            Log.w("whisper-input", "restart start() failed: ${e.message}")
+            false
+        }
+    }
+
     // Assign onUpdateMicrophoneAmplitude callback
     fun setOnUpdateMicrophoneAmplitude(onUpdateMicrophoneAmplitude: (Int) -> Unit) {
         this.onUpdateMicrophoneAmplitude = onUpdateMicrophoneAmplitude
