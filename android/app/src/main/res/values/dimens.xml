@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared keyboard geometry. Keep touch targets and icon insets together so
+         state changes never require a layout adjustment. -->
+    <dimen name="keyboard_bar_padding_top">4dp</dimen>
+    <dimen name="keyboard_bar_padding_bottom">8dp</dimen>
+    <dimen name="keyboard_top_handle_width">32dp</dimen>
+    <dimen name="keyboard_top_handle_height">4dp</dimen>
+    <dimen name="keyboard_top_handle_margin_top">2dp</dimen>
+    <dimen name="keyboard_status_margin_top">8dp</dimen>
+    <dimen name="keyboard_status_margin_bottom">6dp</dimen>
+    <dimen name="keyboard_key_margin">8dp</dimen>
+    <dimen name="keyboard_key_touch_size">48dp</dimen>
+    <dimen name="keyboard_key_icon_padding">12dp</dimen>
+    <dimen name="keyboard_space_bar_width">120dp</dimen>
+    <dimen name="keyboard_mic_frame_size">64dp</dimen>
+    <dimen name="keyboard_mic_size">48dp</dimen>
+    <dimen name="keyboard_mic_elevation">6dp</dimen>
+    <dimen name="keyboard_waiting_icon_size">48dp</dimen>
+    <dimen name="keyboard_mic_ripple_0_size">44dp</dimen>
+    <dimen name="keyboard_mic_ripple_1_size">50dp</dimen>
+    <dimen name="keyboard_mic_ripple_2_size">56dp</dimen>
+    <dimen name="keyboard_mic_ripple_3_size">62dp</dimen>
+    <dimen name="keyboard_bar_corner_radius">16dp</dimen>
+</resources>
