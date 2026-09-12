@@ -167,13 +167,14 @@
         android:id="@+id/btn_enter"
         android:layout_width="@dimen/keyboard_key_touch_size"
         android:layout_height="@dimen/keyboard_key_touch_size"
+        android:layout_marginEnd="@dimen/keyboard_key_margin"
         android:padding="@dimen/keyboard_key_icon_padding"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/start_transcribing"
         android:scaleType="fitCenter"
         android:src="@drawable/btn_enter"
         app:layout_constraintBottom_toBottomOf="@+id/btn_space_bar"
-        app:layout_constraintEnd_toEndOf="@+id/btn_backspace"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/btn_space_bar" />
 
     <ImageButton
@@ -241,14 +242,14 @@
     <ImageButton
         style="@style/RegularImage"
         android:id="@+id/btn_settings"
-        android:layout_width="@dimen/keyboard_key_touch_size"
-        android:layout_height="@dimen/keyboard_key_touch_size"
-        android:padding="@dimen/keyboard_key_icon_padding"
+        android:layout_width="@dimen/keyboard_settings_icon_size"
+        android:layout_height="@dimen/keyboard_settings_icon_size"
+        android:layout_marginEnd="@dimen/keyboard_key_margin"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/btn_previous_ime_hint"
         android:scaleType="fitCenter"
         android:src="@drawable/btn_settings"
-        app:layout_constraintEnd_toEndOf="@id/btn_backspace"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/label_status"
         app:layout_constraintBottom_toBottomOf="@id/label_status"/>
 </androidx.constraintlayout.widget.ConstraintLayout>
