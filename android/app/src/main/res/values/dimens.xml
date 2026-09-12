@@ -11,7 +11,7 @@
     <dimen name="keyboard_status_margin_bottom">6dp</dimen>
     <dimen name="keyboard_key_margin">8dp</dimen>
     <dimen name="keyboard_key_touch_size">48dp</dimen>
-    <dimen name="keyboard_key_icon_padding">12dp</dimen>
+    <dimen name="keyboard_key_icon_padding">8dp</dimen>
     <dimen name="keyboard_space_bar_width">120dp</dimen>
     <dimen name="keyboard_mic_frame_size">64dp</dimen>
     <dimen name="keyboard_mic_size">48dp</dimen>
