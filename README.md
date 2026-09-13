@@ -9,7 +9,7 @@ This fork is set up for **self-hosted Whisper servers** over Tailscale/LAN, with
   (`duration × 4 + 30s`), so long dictations are never cut off by the client
   (the original app failed after 10 seconds). Configurable in Settings:
   `Auto` (default), `60s`, `300s`, `600s`.
-- **CI releases** — APKs are built automatically and attached to
+- **Releases** — APKs are built and signed locally, then attached to
   [Releases](https://github.com/tyfnacici/whisper-to-input/releases).
 
 Based on [j3soon/whisper-to-input](https://github.com/j3soon/whisper-to-input) — licensed under GPLv3.
@@ -94,4 +94,4 @@ backend is also still supported (`Endpoint: http://<SERVER_IP>:9000/asr`).
 ## License
 
 This fork is licensed under GPLv3, same as the original project — see the
-[LICENSE](android/LICENSE) file.
+[LICENSE](LICENSE) file.
