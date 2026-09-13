@@ -36,8 +36,6 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.math.ceil
-import com.github.liuyueyi.quick.transfer.ChineseUtils
-
 class WhisperTranscriber {
     private data class Config(
         val endpoint: String,
@@ -130,7 +128,15 @@ class WhisperTranscriber {
         // The read timeout adapts to the recording length so that long dictations
         // are not cut off by the client (the self-hosted server may need a while
         // to transcribe). Fixed overrides are also available in the settings.
-        val readTimeoutSeconds: Long = resolveReadTimeoutSeconds(context, requestTimeout, filename)
+        val audioDurationSeconds = getAudioDurationSeconds(filename)
+        val readTimeoutSeconds: Long = TimeoutPolicy.readTimeoutSeconds(
+            requestTimeout = requestTimeout,
+            auto = context.getString(R.string.settings_option_timeout_auto),
+            t60 = context.getString(R.string.settings_option_timeout_60s),
+            t300 = context.getString(R.string.settings_option_timeout_300s),
+            t600 = context.getString(R.string.settings_option_timeout_600s),
+            recordingDurationSeconds = audioDurationSeconds
+        )
         val client = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
@@ -160,35 +166,21 @@ class WhisperTranscriber {
             rawText = rawText.substring(1, rawText.length - 1).trim()
         }
 
-        val processedText = when (postprocessing) {
-            context.getString(R.string.settings_option_to_simplified) -> ChineseUtils.tw2s(rawText)
-            context.getString(R.string.settings_option_to_traditional) -> ChineseUtils.s2tw(rawText)
-            else -> rawText // No conversion
-        }
+        val processedText = TextPostProcessing.apply(
+            postprocessing = postprocessing,
+            simplified = context.getString(R.string.settings_option_to_simplified),
+            traditional = context.getString(R.string.settings_option_to_traditional),
+            // The trailing space only applies when nothing else is attached to
+            // the end; space key and enter key append their own whitespace.
+            addTrailingSpace = addTrailingSpace && attachToEnd == "",
+            text = rawText
+        )
 
         if (attachToEnd == "") {
-            return processedText + if (addTrailingSpace) " " else ""
+            return processedText
         } else {
             // Only used for space key and enter key.
             return processedText + attachToEnd
-        }
-    }
-
-    // Resolves the read timeout (in seconds) for the transcription request.
-    // - "Auto": adapts to the audio duration (duration * 4 + 30 seconds),
-    //   falling back to 10 minutes if the duration cannot be determined.
-    // - Fixed values (60s, 300s, 600s) simply override the timeout.
-    private fun resolveReadTimeoutSeconds(context: Context, requestTimeout: String, filename: String): Long {
-        if (requestTimeout == context.getString(R.string.settings_option_timeout_60s)) return 60L
-        if (requestTimeout == context.getString(R.string.settings_option_timeout_300s)) return 300L
-        if (requestTimeout == context.getString(R.string.settings_option_timeout_600s)) return 600L
-        // "Auto" (default) and any unknown value: adaptive timeout
-        val audioDurationSeconds: Long? = getAudioDurationSeconds(filename)
-        return if (audioDurationSeconds == null) {
-            // Fall back to 10 minutes if duration cannot be determined
-            600L
-        } else {
-            audioDurationSeconds * 4 + 30L
         }
     }
 
