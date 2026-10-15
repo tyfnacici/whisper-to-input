@@ -1,389 +1,401 @@
-/*
- * This file is part of Whisper To Input, see <https://github.com/j3soon/whisper-to-input>.
- *
- * Copyright (c) 2023-2025 Yan-Bin Diau, Johnson Sun
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
-
+// SPDX-License-Identifier: GPL-3.0-or-later
 package com.example.whispertoinput
 
-import android.inputmethodservice.InputMethodService
-import android.os.Build
-import android.util.Log
-import android.view.ContextThemeWrapper
-import android.view.View
+import android.content.Context
 import android.content.Intent
+import android.inputmethodservice.InputMethodService
+import android.net.ConnectivityManager
+import android.net.Network
+import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
+import android.util.Log
 import android.text.TextUtils
+import android.view.ContextThemeWrapper
 import android.view.KeyEvent
 import android.view.LayoutInflater
+import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
-import androidx.datastore.preferences.core.Preferences
+import com.example.whispertoinput.keyboard.KeyboardListener
+import com.example.whispertoinput.keyboard.KeyboardState
 import com.example.whispertoinput.keyboard.WhisperKeyboard
 import com.example.whispertoinput.recorder.RecorderManager
-import com.google.android.material.color.DynamicColors
-import com.github.liuyueyi.quick.transfer.ChineseUtils
-import com.github.liuyueyi.quick.transfer.constants.TransType
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 
-private const val RECORDED_AUDIO_FILENAME_M4A = "recorded.m4a"
-private const val RECORDED_AUDIO_FILENAME_OGG = "recorded.ogg"
-private const val AUDIO_MEDIA_TYPE_M4A = "audio/mp4"
-private const val AUDIO_MEDIA_TYPE_OGG = "audio/ogg"
-private const val IME_SWITCH_OPTION_AVAILABILITY_API_LEVEL = 28
+private const val MIN_RECORDING_MS = 700L
+private const val PING_INTERVAL_MS = 10_000L
+private const val WATCHDOG_INTERVAL_MS = 5_000L
+private const val WATCHDOG_MAX_FAILURES = 4
 
-class WhisperInputService : InputMethodService() {
-    private val whisperKeyboard: WhisperKeyboard = WhisperKeyboard()
-    private val whisperTranscriber: WhisperTranscriber = WhisperTranscriber()
-    private var recorderManager: RecorderManager? = null
-    private var recordedAudioFilename: String = ""
-    private var audioMediaType: String = AUDIO_MEDIA_TYPE_M4A
-    private var useOggFormat: Boolean = false
-    private var isFirstTime: Boolean = true
-
-    // Live transcription state (only active when the LIVE_TRANSCRIPTION pref is on
-    // and a recording session is running).
-    private var liveModeEnabled: Boolean = false
-    private var liveTranscriber: LiveTranscriber? = null
-    private var liveChunkIndex: Int = 0
-
-    private fun transcriptionCallback(text: String?) {
-        if (!text.isNullOrEmpty()) {
-            currentInputConnection?.commitText(text, 1)
-            // Check if auto-switch-back is enabled and switch if so
-            CoroutineScope(Dispatchers.Main).launch {
-                val autoSwitchBack = dataStore.data.map { preferences: Preferences ->
-                    preferences[AUTO_SWITCH_BACK] ?: false
-                }.first()
-                if (autoSwitchBack) {
-                    onSwitchIme()
-                }
-            }
-        }
-        whisperKeyboard.reset()
+class WhisperInputService : InputMethodService(), KeyboardListener {
+    // A stray exception must never take the keyboard process down.
+    private val errorHandler = CoroutineExceptionHandler { _, e ->
+        Log.e("whisper-input", "unhandled error: ${e.message}", e)
     }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate + errorHandler)
+    private val keyboard = WhisperKeyboard()
+    private lateinit var recorder: RecorderManager
+    private lateinit var store: PendingStore
 
-    private fun transcriptionExceptionCallback(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-        whisperKeyboard.reset()
-    }
+    private var windowVisible = false
+    private var editorKey = ""
 
-    private suspend fun updateAudioFormat() {
-        val backend = dataStore.data.map { preferences: Preferences ->
-            preferences[SPEECH_TO_TEXT_BACKEND] ?: getString(R.string.settings_option_openai_api)
-        }.first()
+    private var recording = false
+    private var recordStartedAt = 0L
+    private var recordEditorKey = ""
+    private var recordWasAutoStarted = false
 
-        useOggFormat = backend == getString(R.string.settings_option_nvidia_nim)
-        if (useOggFormat) {
-            recordedAudioFilename = "${externalCacheDir?.absolutePath}/${RECORDED_AUDIO_FILENAME_OGG}"
-            audioMediaType = AUDIO_MEDIA_TYPE_OGG
-        } else {
-            recordedAudioFilename = "${externalCacheDir?.absolutePath}/${RECORDED_AUDIO_FILENAME_M4A}"
-            audioMediaType = AUDIO_MEDIA_TYPE_M4A
-        }
-    }
+    private var sendJob: Job? = null
+    private var sending = false
+    private var sendStartedAt = 0L
 
-    private suspend fun updateLiveMode() {
-        liveModeEnabled = dataStore.data.map { preferences: Preferences ->
-            preferences[LIVE_TRANSCRIPTION] ?: true
-        }.first()
-    }
+    private var online: Boolean? = null
+    private var lastError: String? = null
 
-    // Called when the LiveTranscriber FSM completes a chunk: finalize the current
-    // segment file, pass it to the ordered queue, and keep recording seamlessly.
-    private fun onLiveChunkBoundary() {
-        val manager = recorderManager ?: return
-        val transcriber = liveTranscriber ?: return
+    private var tickerJob: Job? = null
+    private var monitorJob: Job? = null
+    private val pingNow = Channel<Unit>(Channel.CONFLATED)
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
-        val chunkFilename = "${externalCacheDir?.absolutePath}/chunk_${liveChunkIndex++}" +
-            if (useOggFormat) ".ogg" else ".m4a"
-        val chunkFile = File(recordedAudioFilename)
-        val moved = if (chunkFile.exists()) {
-            try {
-                chunkFile.renameTo(File(chunkFilename))
-            } catch (e: Exception) {
-                Log.w("whisper-input", "chunk rename failed: ${e.message}")
-                false
-            }
-        } else {
-            false
-        }
-
-        // Restart recording into the standard file immediately so no words are lost.
-        if (!manager.restart(this, recordedAudioFilename, useOggFormat)) {
-            Log.w("whisper-input", "recorder restart failed; falling back to single-shot")
-            stopLiveMode()
-            return
-        }
-
-        if (moved) {
-            transcriber.onSegmentReady(File(chunkFilename))
-        }
-    }
-
-    private fun stopLiveMode() {
-        liveTranscriber?.reset()
-        liveTranscriber = null
-        liveModeEnabled = false
-        liveChunkIndex = 0
-    }
-
-    private fun cleanupChunkFiles() {
-        val cacheDir = externalCacheDir ?: return
-        cacheDir.listFiles { file -> file.name.startsWith("chunk_") }?.forEach { it.delete() }
+    override fun onCreate() {
+        super.onCreate()
+        recorder = RecorderManager(this)
+        store = PendingStore(File(filesDir, "pending"))
+        store.prune()
+        registerNetworkCallback()
     }
 
     override fun onCreateInputView(): View {
-        // Initialize members with regard to this context
-        recorderManager = RecorderManager(this)
-
-        // Preload conversion table
-        ChineseUtils.preLoad(true, TransType.SIMPLE_TO_TAIWAN)
-        ChineseUtils.preLoad(true, TransType.TAIWAN_TO_SIMPLE)
-
-        // Initialize audio format based on backend setting
-        CoroutineScope(Dispatchers.Main).launch {
-            updateAudioFormat()
-        }
-
-        // Should offer ime switch?
-        val shouldOfferImeSwitch: Boolean =
-            if (Build.VERSION.SDK_INT >= IME_SWITCH_OPTION_AVAILABILITY_API_LEVEL) {
-                shouldOfferSwitchingToNextInputMethod()
-            } else {
-                val inputMethodManager =
-                    getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-                val token: IBinder? = window?.window?.attributes?.token
-                inputMethodManager.shouldOfferSwitchingToNextInputMethod(token)
-            }
-
-        // Sets up recorder manager
-        recorderManager!!.setOnUpdateMicrophoneAmplitude { amplitude ->
-            onUpdateMicrophoneAmplitude(amplitude)
-        }
-
-        // The IME inflates under the system Theme.DeviceDefault.InputMethod, which
-        // has no Material 3 attributes (colorSurface etc.) — inflating with it
-        // crashes on any ?attr/ M3 reference. Wrap the context in an inflated
-        // version of OUR Material 3 theme (with dynamic colors applied on top,
-        // so the wallpaper palette is used when available).
-        val themedContext = ContextThemeWrapper(
-            this,
-            R.style.Theme_WhisperToInput
-        )
-        DynamicColors.wrapContextIfAvailable(themedContext)
-        val themedLayoutInflater = themedContext.getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
-
-        // Returns the keyboard after setting it up and inflating its layout
-        return whisperKeyboard.setup(themedLayoutInflater,
-            shouldOfferImeSwitch,
-            { onStartRecording() },
-            { onCancelRecording() },
-            { attachToEnd -> onStartTranscription(attachToEnd) },
-            { onCancelTranscription() },
-            { onDeleteText() },
-            { onEnter() },
-            { onSpaceBar() },
-            { onSwitchIme() },
-            { onOpenSettings() },
-            { shouldShowRetry() },
-        )
+        val themed = ContextThemeWrapper(this, R.style.Theme_WhisperToInput)
+        val inflater = themed.getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
+        val view = keyboard.setup(inflater, shouldOfferImeSwitch(), this)
+        render()
+        return view
     }
 
-    private fun onStartRecording() {
-        // Upon starting recording, check whether audio permission is granted.
-        if (!recorderManager!!.allPermissionsGranted(this)) {
-            // If not, launch app MainActivity (for permission setup).
-            launchMainActivity()
-            whisperKeyboard.reset()
-            return
-        }
-
-        // Start a fresh live-transcription session if the setting is enabled.
-        CoroutineScope(Dispatchers.Main).launch {
-            updateLiveMode()
-            if (liveModeEnabled) {
-                cleanupChunkFiles()
-                liveChunkIndex = 0
-                liveTranscriber = LiveTranscriber(
-                    this@WhisperInputService,
-                    { text ->
-                        // Ordered chunk result: commit as it arrives. The keyboard
-                        // stays in Recording state (no reset) — live mode keeps
-                        // listening while text streams in.
-                        if (text.isNotEmpty()) {
-                            currentInputConnection?.commitText(text, 1)
-                        }
-                    },
-                    { message ->
-                        // Chunk failure must not kill the session; show and keep going.
-                        Toast.makeText(this@WhisperInputService, message, Toast.LENGTH_SHORT).show()
-                    })
-            }
-        }
-
-        recorderManager!!.start(this, recordedAudioFilename, useOggFormat)
-    }
-
-    // when mic amplitude is updated, notify the keyboard
-    // this callback is registered to the recorder manager
-    private fun onUpdateMicrophoneAmplitude(amplitude: Int) {
-        whisperKeyboard.updateMicrophoneAmplitude(amplitude)
-
-        // Feed the live FSM and detect chunk boundaries.
-        val transcriber = liveTranscriber ?: return
-        val before = transcriber.completedChunkCount
-        transcriber.onAmplitude(amplitude)
-        if (transcriber.completedChunkCount > before) {
-            onLiveChunkBoundary()
-        }
-    }
-
-    private fun onCancelRecording() {
-        stopLiveMode()
-        recorderManager!!.stop()
-    }
-
-    private fun onStartTranscription(attachToEnd: String) {
-        val live = liveTranscriber
-        if (live != null) {
-            // Live mode final press: stop recording, enqueue the final remaining
-            // segment through the ordered queue so its text lands after previous
-            // chunks, then tear the live session down.
-            recorderManager!!.stop()
-            val finalFile = File(recordedAudioFilename)
-            if (finalFile.exists()) {
-                val tailFilename = "${externalCacheDir?.absolutePath}/chunk_${liveChunkIndex++}" +
-                    if (useOggFormat) ".ogg" else ".m4a"
-                if (finalFile.renameTo(File(tailFilename))) {
-                    live.onSegmentReady(File(tailFilename))
-                }
-            }
-            // The queue drains in the background; nothing else to wait on here.
-            // Keyboard resets so the user can keep typing while the tail commits.
-            whisperKeyboard.reset()
+    private fun shouldOfferImeSwitch(): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            shouldOfferSwitchingToNextInputMethod()
         } else {
-            recorderManager!!.stop()
-            whisperTranscriber.startAsync(this,
-                recordedAudioFilename,
-                audioMediaType,
-                attachToEnd,
-                { transcriptionCallback(it) },
-                { transcriptionExceptionCallback(it) })
-        }
-    }
-
-    private fun onCancelTranscription() {
-        stopLiveMode()
-        whisperTranscriber.stop()
-    }
-
-    private fun onDeleteText() {
-        val inputConnection = currentInputConnection ?: return
-        val selectedText = inputConnection.getSelectedText(0)
-
-        // Deletes cursor pointed text, or all selected texts
-        if (TextUtils.isEmpty(selectedText)) {
-            inputConnection.deleteSurroundingText(1, 0)
-        } else {
-            inputConnection.commitText("", 1)
-        }
-    }
-
-    private fun onSwitchIme() {
-        // Before API Level 28, switchToPreviousInputMethod() was not available
-        if (Build.VERSION.SDK_INT >= IME_SWITCH_OPTION_AVAILABILITY_API_LEVEL) {
-            switchToPreviousInputMethod()
-        } else {
-            val inputMethodManager = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
             val token: IBinder? = window?.window?.attributes?.token
-            inputMethodManager.switchToLastInputMethod(token)
+            (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
+                .shouldOfferSwitchingToNextInputMethod(token)
         }
 
-    }
+    // ---------------------------------------------------------------- lifecycle
 
-    private fun onOpenSettings() {
-        launchMainActivity()
-    }
-
-    private fun onEnter() {
-        val inputConnection = currentInputConnection ?: return
-        inputConnection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
-    }
-
-    private fun onSpaceBar() {
-        val inputConnection = currentInputConnection ?: return
-        inputConnection.commitText(" ", 1)
-    }
-
-    private fun shouldShowRetry(): Boolean {
-        val exists = File(recordedAudioFilename).exists()
-        return exists
-    }
-
-    // Opens up app MainActivity
-    private fun launchMainActivity() {
-        val dialogIntent = Intent(this, MainActivity::class.java)
-        dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivity(dialogIntent)
+    override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
+        super.onStartInput(attribute, restarting)
+        editorKey = "${attribute?.packageName}:${attribute?.fieldId}"
     }
 
     override fun onWindowShown() {
         super.onWindowShown()
-        stopLiveMode()
-        whisperTranscriber.stop()
-        whisperKeyboard.reset()
-        recorderManager!!.stop()
-
-        // If this is the first time calling onWindowShown, it means this IME is just being switched to.
-        // Automatically starts recording after switching to Whisper Input. (if settings enabled)
-        // Dispatch a coroutine to do this task.
-        CoroutineScope(Dispatchers.Main).launch {
-            // Update audio format based on current backend setting
-            updateAudioFormat()
-            if (!isFirstTime) return@launch
-            isFirstTime = false
-            val isAutoStartRecording = dataStore.data.map { preferences: Preferences ->
-                preferences[AUTO_RECORDING_START] ?: true
-            }.first()
-            if (isAutoStartRecording) {
-                whisperKeyboard.tryStartRecording()
-            }
+        windowVisible = true
+        startMonitor()
+        scope.launch {
+            insertReady(onlyThisField = true)
+            val autoStart = readBoolean(AUTO_RECORDING_START, true)
+            if (autoStart && !recording && windowVisible) startRecording(auto = true)
+            render()
         }
     }
 
     override fun onWindowHidden() {
         super.onWindowHidden()
-        stopLiveMode()
-        whisperTranscriber.stop()
-        whisperKeyboard.reset()
-        recorderManager!!.stop()
+        windowVisible = false
+        monitorJob?.cancel()
+        monitorJob = null
+        // A transcription that is already running keeps going; its text waits for the next field.
+        if (recording) {
+            // An auto-started recording nobody asked for is dropped; a manual one is kept.
+            if (recordWasAutoStarted) cancelRecording() else finishRecording(send = false)
+        }
+        render()
     }
 
     override fun onDestroy() {
+        if (recording) finishRecording(send = false)
+        networkCallback?.let {
+            (getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager)
+                .unregisterNetworkCallback(it)
+        }
+        scope.cancel()
         super.onDestroy()
-        stopLiveMode()
-        whisperTranscriber.stop()
-        whisperKeyboard.reset()
-        recorderManager!!.stop()
+    }
+
+    // ---------------------------------------------------------------- recording
+
+    override fun onStartRecording() {
+        if (!recording) startRecording(auto = false)
+    }
+
+    override fun onStopRecording() {
+        if (recording) finishRecording(send = true)
+    }
+
+    private fun recordingFile() = File(cacheDir, "recording.m4a")
+
+    private fun startRecording(auto: Boolean) {
+        if (!recorder.hasMicrophonePermission()) {
+            if (!auto) launchMainActivity()
+            return
+        }
+        if (!recorder.start(recordingFile())) {
+            Toast.makeText(this, R.string.toast_mic_failed, Toast.LENGTH_SHORT).show()
+            return
+        }
+        recording = true
+        recordWasAutoStarted = auto
+        recordStartedAt = SystemClock.elapsedRealtime()
+        recordEditorKey = editorKey
+        startTicker()
+        render()
+    }
+
+    private fun cancelRecording() {
+        if (!recording) return
+        recording = false
+        recorder.stop()
+        recordingFile().delete()
+        render()
+    }
+
+    /** Stops the recording and queues it; sends it right away when [send] is true. */
+    private fun finishRecording(send: Boolean) {
+        recording = false
+        val durationMs = recorder.stop()
+        if (durationMs == null || durationMs < MIN_RECORDING_MS) {
+            recordingFile().delete()
+            if (durationMs != null && send) {
+                Toast.makeText(this, R.string.toast_too_short, Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            store.add(recordingFile(), durationMs, recordEditorKey)
+            if (send) processQueue()
+        }
+        render()
+    }
+
+    // ------------------------------------------------------------- transcription
+
+    /** Sends queued recordings one by one, oldest first, and types their text in order. */
+    private fun processQueue() {
+        if (sending) return
+        lastError = null
+        sending = true
+        sendStartedAt = SystemClock.elapsedRealtime()
+        sendJob = scope.launch {
+            val self = coroutineContext.job
+            var watchdogTripped = false
+            val watchdog = launch {
+                var failures = 0
+                while (isActive) {
+                    delay(WATCHDOG_INTERVAL_MS)
+                    failures = if (ServerHealth.ping(readEndpoint()) == null) failures + 1 else 0
+                    if (failures >= WATCHDOG_MAX_FAILURES) {
+                        watchdogTripped = true
+                        self.cancel()
+                        return@launch
+                    }
+                }
+            }
+            try {
+                while (true) {
+                    val next = store.list().firstOrNull { it.text == null } ?: break
+                    val text = Transcriber.transcribe(readEndpoint(), next.audio, next.durationMs)
+                    if (text.isEmpty()) {
+                        store.remove(next.id)
+                        Toast.makeText(this@WhisperInputService, R.string.toast_no_speech, Toast.LENGTH_SHORT).show()
+                    } else {
+                        store.saveText(next.id, text)
+                        insertReady(onlyThisField = true)
+                    }
+                    online = true
+                    render()
+                }
+            } catch (e: TranscriptionException) {
+                lastError = if (e.retryable) getString(R.string.error_unreachable) else e.message
+                if (e.retryable) online = false
+            } catch (e: CancellationException) {
+                if (watchdogTripped) {
+                    lastError = getString(R.string.error_unreachable)
+                    online = false
+                }
+            } catch (e: Exception) {
+                Log.e("whisper-input", "send failed: ${e.message}", e)
+                lastError = e.message ?: getString(R.string.error_unreachable)
+            } finally {
+                watchdog.cancel()
+                sending = false
+                render()
+            }
+        }
+        sendJob?.invokeOnCompletion { sending = false }
+        startTicker()
+        render()
+    }
+
+    override fun onCancel() {
+        when {
+            recording -> cancelRecording()
+            sending -> {
+                // The audio stays queued so it can be sent again.
+                sendJob?.cancel()
+                lastError = null
+                render()
+            }
+        }
+    }
+
+    override fun onRetry() = processQueue()
+
+    override fun onDiscardPending() {
+        store.clearUntranscribed()
+        lastError = null
+        Toast.makeText(this, R.string.toast_discarded, Toast.LENGTH_SHORT).show()
+        render()
+    }
+
+    // ------------------------------------------------------------- typing results
+
+    /**
+     * Types waiting texts into the current field, oldest first. With [onlyThisField]
+     * only texts recorded for this very field are typed; otherwise all of them.
+     */
+    private suspend fun insertReady(onlyThisField: Boolean) {
+        val ic = currentInputConnection ?: return
+        if (!windowVisible) return
+        val ready = store.list().filter {
+            it.text != null && (!onlyThisField || it.editorKey == editorKey)
+        }
+        if (ready.isEmpty()) return
+        ic.beginBatchEdit()
+        for (item in ready) {
+            val before = ic.getTextBeforeCursor(1, 0)
+            val needsSpace = !before.isNullOrEmpty() && !before[0].isWhitespace()
+            ic.commitText((if (needsSpace) " " else "") + item.text.orEmpty(), 1)
+            store.remove(item.id)
+        }
+        ic.endBatchEdit()
+        if (readBoolean(AUTO_SWITCH_BACK, false)) onSwitchIme()
+        render()
+    }
+
+    override fun onInsertReady() {
+        scope.launch { insertReady(onlyThisField = false) }
+    }
+
+    // ---------------------------------------------------------- connection status
+
+    private fun registerNetworkCallback() {
+        val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                pingNow.trySend(Unit)
+            }
+
+            override fun onLost(network: Network) {
+                pingNow.trySend(Unit)
+            }
+        }
+        runCatching { cm.registerDefaultNetworkCallback(callback) }
+            .onSuccess { networkCallback = callback }
+    }
+
+    /** Checks the server while the keyboard is visible, and again whenever the network changes. */
+    private fun startMonitor() {
+        monitorJob?.cancel()
+        monitorJob = scope.launch {
+            while (isActive) {
+                val reachable = ServerHealth.ping(readEndpoint()) != null
+                if (reachable != online) {
+                    online = reachable
+                    if (reachable && !sending) lastError = null
+                    render()
+                }
+                withTimeoutOrNull(PING_INTERVAL_MS) { pingNow.receive() }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------- UI state
+
+    private fun startTicker() {
+        if (tickerJob?.isActive == true) return
+        tickerJob = scope.launch {
+            while (isActive && (recording || sending)) {
+                render()
+                delay(500)
+            }
+            render()
+        }
+    }
+
+    private fun render() {
+        val items = store.list()
+        val now = SystemClock.elapsedRealtime()
+        val elapsedMs = if (recording) now - recordStartedAt else if (sending) now - sendStartedAt else 0L
+        keyboard.render(
+            KeyboardState(
+                recording = recording,
+                sending = sending,
+                elapsedSeconds = elapsedMs / 1000,
+                pendingCount = items.count { it.text == null },
+                readyCount = items.count { it.text != null },
+                online = online,
+                error = lastError
+            )
+        )
+    }
+
+    // ------------------------------------------------------------------ other keys
+
+    override fun onBackspace() {
+        val ic = currentInputConnection ?: return
+        if (TextUtils.isEmpty(ic.getSelectedText(0))) ic.deleteSurroundingText(1, 0)
+        else ic.commitText("", 1)
+    }
+
+    override fun onEnter() {
+        val ic = currentInputConnection ?: return
+        ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
+        ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
+    }
+
+    override fun onSpace() {
+        currentInputConnection?.commitText(" ", 1)
+    }
+
+    override fun onSwitchIme() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            switchToPreviousInputMethod()
+        } else {
+            val token: IBinder? = window?.window?.attributes?.token
+            (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).switchToLastInputMethod(token)
+        }
+    }
+
+    override fun onOpenSettings() = launchMainActivity()
+
+    private fun launchMainActivity() {
+        startActivity(
+            Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
     }
 }

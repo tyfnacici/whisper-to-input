@@ -1,60 +1,32 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 package com.example.whispertoinput
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class TimeoutPolicyTest {
-    private val auto = "Auto"
-    private val t60 = "60s"
-    private val t300 = "300s"
-    private val t600 = "600s"
-
-    private fun timeout(setting: String, duration: Long?) = TimeoutPolicy.readTimeoutSeconds(
-        requestTimeout = setting,
-        auto = auto,
-        t60 = t60,
-        t300 = t300,
-        t600 = t600,
-        recordingDurationSeconds = duration
-    )
-
-    @Test fun fixed60OverridesShortAndLongDurations() {
-        assertEquals(60L, timeout(t60, 0L))
-        assertEquals(60L, timeout(t60, 3600L))
+    @Test fun shortClipsGetAtLeastSixtySeconds() {
+        assertEquals(60L, TimeoutPolicy.readTimeoutSeconds(0L))
+        assertEquals(60L, TimeoutPolicy.readTimeoutSeconds(5_000L))
+        assertEquals(60L, TimeoutPolicy.writeTimeoutSeconds(5_000L))
     }
 
-    @Test fun fixed300OverridesDurationIncludingNull() {
-        assertEquals(300L, timeout(t300, null))
-        assertEquals(300L, timeout(t300, 100L))
+    @Test fun readTimeoutIsFourTimesDurationPlusThirty() {
+        assertEquals(430L, TimeoutPolicy.readTimeoutSeconds(100_000L))
+        assertEquals(14_430L, TimeoutPolicy.readTimeoutSeconds(3_600_000L))
     }
 
-    @Test fun fixed600OverridesDurationIncludingNull() {
-        assertEquals(600L, timeout(t600, null))
-        assertEquals(600L, timeout(t600, 5L))
+    @Test fun partialSecondsRoundUp() {
+        assertEquals(TimeoutPolicy.readTimeoutSeconds(100_000L) + 4,
+            TimeoutPolicy.readTimeoutSeconds(100_001L))
     }
 
-    @Test fun autoWithZeroDurationUsesThirtySeconds() {
-        assertEquals(30L, timeout(auto, 0L))
+    @Test fun writeTimeoutIsTwiceDurationPlusThirty() {
+        assertEquals(230L, TimeoutPolicy.writeTimeoutSeconds(100_000L))
     }
 
-    @Test fun autoWithShortDictationUsesAdaptiveFormula() {
-        assertEquals(50L, timeout(auto, 5L))
-    }
-
-    @Test fun autoWithHundredSecondRecordingUsesAdaptiveFormula() {
-        assertEquals(430L, timeout(auto, 100L))
-    }
-
-    @Test fun autoWithUnknownDurationFallsBackToTenMinutes() {
-        assertEquals(600L, timeout(auto, null))
-    }
-
-    @Test fun unknownSettingUsesAdaptiveFormulaAndFallback() {
-        assertEquals(430L, timeout("forever", 100L))
-        assertEquals(600L, timeout("forever", null))
-    }
-
-    @Test fun largeDurationGrowsLinearly() {
-        assertEquals(14430L, timeout(auto, 3600L))
+    @Test fun unknownDurationFallsBackToTenMinutes() {
+        assertEquals(600L, TimeoutPolicy.readTimeoutSeconds(null))
+        assertEquals(600L, TimeoutPolicy.writeTimeoutSeconds(null))
     }
 }

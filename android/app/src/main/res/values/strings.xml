@@ -1,99 +1,47 @@
 <resources>
-    <!-- General -->
-    <string name="app_name">Whisper To Input</string>
-    <string name="enter_text">Enter Text</string>
-    <string name="whisper_to_input">Whisper To Input</string>
-    <string name="empty_string" />
-    <string name="loading">Loading…</string>
+    <string name="app_name">Whisper Input</string>
 
     <!-- Keyboard -->
-    <string name="recording">Recording…</string>
-    <string name="transcribing">Transcribing…</string>
-    <string name="start_speech_to_text">Start speech-to-text.</string>
-    <string name="start_transcribing">Start transcribing.</string>
-    <string name="grant_microphone_permission">Grant Microphone Permission</string>
-    <string name="mic_permission_required">Whisper to Input requires microphone permission to work.</string>
-    <string name="notification_permission_required">Whisper to Input requires notification permission to work.</string>
-    <string name="microphone">Microphone</string>
-    <string name="successfully_set">Successfully set!</string>
-    <string name="backspace_button_hint">Backspace Button</string>
-    <string name="btn_previous_ime_hint">Switch To Previous Input Method</string>
-    <string name="generate_logcat">Generate Recent Logcat</string>
-
-    <!-- Warning and Error Messages -->
-    <string name="error_endpoint_unset">Error: Endpoint is not set in settings.</string>
+    <string name="hint_idle">Dokun ya da basılı tutup konuş</string>
+    <string name="hint_pending">%d bekleyen kayıt</string>
+    <string name="status_recording">%1$s · Dinliyorum</string>
+    <string name="status_sending">Yazıya çevriliyor · %1$s</string>
+    <string name="chip_ready">Hazır · yaz</string>
+    <string name="error_unreachable">Sunucuya ulaşılamadı</string>
+    <string name="toast_too_short">Kayıt çok kısa</string>
+    <string name="toast_no_speech">Ses algılanmadı</string>
+    <string name="toast_mic_failed">Mikrofon açılamadı</string>
+    <string name="toast_discarded">Bekleyen kayıtlar silindi</string>
+    <string name="desc_mic">Konuşmayı başlat veya bitir</string>
+    <string name="desc_cancel">İptal</string>
+    <string name="desc_retry">Bekleyen kayıtları tekrar gönder</string>
+    <string name="desc_backspace">Sil</string>
+    <string name="desc_enter">Enter</string>
+    <string name="desc_space">Boşluk</string>
+    <string name="desc_switch_ime">Önceki klavyeye geç</string>
+    <string name="desc_settings">Ayarlar</string>
+    <string name="desc_online">Sunucu bağlı</string>
+    <string name="desc_offline">Sunucuya ulaşılamıyor</string>
+    <string name="space_label">boşluk</string>
 
     <!-- Settings -->
-    <string name="whisper_to_input_settings_title">Whisper To Input Settings</string>
-    <string name="settings_btn_apply">Apply</string>
-    <string name="settings_section_connection">Connection</string>
-    <string name="settings_section_transcription">Transcription</string>
-    <string name="settings_section_behavior">Behavior</string>
-    <string name="settings_speech_to_text_backend">Speech to Text Backend</string>
-    <string name="settings_speech_to_text_backend_desc">Use the official OpenAI API, Whisper ASR Webservice, or NVIDIA NIM backend.</string>
-    <string name="settings_option_openai_api">OpenAI API</string>
-    <string name="settings_option_openai_api_default_endpoint">http://100.124.60.71:8814/inference</string>
-    <string name="settings_option_openai_api_default_language">auto</string>
-    <string name="settings_option_whisper_asr_webservice">Whisper ASR Webservice</string>
-    <string name="settings_option_whisper_asr_webservice_default_endpoint">http://localhost:9000/asr</string>
-    <string name="settings_option_nvidia_nim">NVIDIA NIM</string>
-    <string name="settings_option_nvidia_nim_default_endpoint">http://localhost:9000/v1/audio/transcriptions</string>
-    <string name="settings_option_nvidia_nim_default_language">multi</string> <!-- Empty default language -->
-    <string-array name="settings_speech_to_text_backend_array">
-        <item>@string/settings_option_openai_api</item>
-        <item>@string/settings_option_whisper_asr_webservice</item>
-        <item>@string/settings_option_nvidia_nim</item>
-    </string-array>
-    <string name="settings_endpoint">Endpoint</string>
-    <string name="settings_endpoint_desc">The host and port for the OpenAI API, Whisper ASR Webservice, or NVIDIA NIM endpoint.</string>
-    <string name="settings_endpoint_hint"><![CDATA[e.g., http://<host>:<port>/asr]]></string>
-    <string name="settings_language_code">Language Code</string>
-    <string name="settings_language_code_desc">The language code to be included in the request payload (e.g., en, zh).</string>
-    <string name="settings_language_code_hint">Enter Language Code (e.g., en, zh)</string>
-    <string name="settings_option_yes">Yes</string>
-    <string name="settings_option_no">No</string>
-    <string name="settings_auto_recording_start">Auto Recording Start</string>
-    <string name="settings_auto_recording_start_desc">Whether to automatically start recording upon opening the keyboard.</string>
-    <string-array name="settings_auto_recording_start_array">
-        <item>@string/settings_option_yes</item>
-        <item>@string/settings_option_no</item>
-    </string-array>
-    <string name="settings_live_transcription">Live Transcription</string>
-    <string name="settings_live_transcription_desc">Whether to continuously transcribe while recording, instead of only after recording stops.</string>
-    <string name="settings_auto_switch_back">Auto Switch Back</string>
-    <string name="settings_auto_switch_back_desc">Automatically switch back to the previous keyboard after transcription.</string>
-    <string-array name="settings_auto_switch_back_array">
-        <item>@string/settings_option_yes</item>
-        <item>@string/settings_option_no</item>
-    </string-array>
-    <string name="settings_add_trailing_space">Add Trailing Space</string>
-    <string name="settings_add_trailing_space_desc">Whether to add a trailing space after the transcribed text.</string>
-    <string-array name="settings_add_trailing_space_array">
-        <item>@string/settings_option_yes</item>
-        <item>@string/settings_option_no</item>
-    </string-array>
-    <string name="settings_postprocessing">Postprocessing</string>
-    <string name="settings_postprocessing_desc">Choose how to handle text postprocessing.</string>
-    <string name="settings_option_to_traditional">Convert to Traditional Chinese</string>
-    <string name="settings_option_to_simplified">Convert to Simplified Chinese</string>
-    <string name="settings_option_no_conversion">No Conversion</string>
-    <string-array name="settings_postprocessing_array">
-        <item>@string/settings_option_to_traditional</item>
-        <item>@string/settings_option_to_simplified</item>
-        <item>@string/settings_option_no_conversion</item>
-    </string-array>
-    <string name="settings_request_timeout">Request Timeout</string>
-    <string name="settings_request_timeout_desc">Maximum time to wait for the transcription result. Auto adjusts the timeout to the recording length.</string>
-    <string name="settings_option_timeout_auto">Auto</string>
-    <string name="settings_option_timeout_60s">60s</string>
-    <string name="settings_option_timeout_300s">300s</string>
-    <string name="settings_option_timeout_600s">600s</string>
-    <string-array name="settings_request_timeout_array">
-        <item>@string/settings_option_timeout_auto</item>
-        <item>@string/settings_option_timeout_60s</item>
-        <item>@string/settings_option_timeout_300s</item>
-        <item>@string/settings_option_timeout_600s</item>
-    </string-array>
-    <string name="desc_space_bar">Space Bar</string>
-
+    <string name="section_server">Sunucu</string>
+    <string name="section_behavior">Davranış</string>
+    <string name="section_permissions">İzinler</string>
+    <string name="label_endpoint">Adres</string>
+    <string name="error_endpoint_invalid">Geçerli bir http adresi gir</string>
+    <string name="btn_test_connection">Bağlantıyı dene</string>
+    <string name="conn_unknown">Henüz denenmedi</string>
+    <string name="conn_testing">Deneniyor…</string>
+    <string name="conn_ok">Bağlı · %d ms</string>
+    <string name="conn_fail">Ulaşılamadı</string>
+    <string name="server_note">Model, dil ve ipuçları sunucudaki ayarlardan gelir.</string>
+    <string name="setting_auto_start">Klavye açılınca kaydı başlat</string>
+    <string name="setting_auto_start_desc">Whisper Input görününce hemen dinlemeye başlar</string>
+    <string name="setting_auto_switch">Yazınca önceki klavyeye dön</string>
+    <string name="setting_auto_switch_desc">Metin eklendikten sonra otomatik</string>
+    <string name="perm_microphone">Mikrofon</string>
+    <string name="perm_granted">Verildi</string>
+    <string name="perm_grant">İzin ver</string>
+    <string name="footer_autosave">Değişiklikler otomatik kaydedilir · v%s</string>
 </resources>

@@ -1,97 +1,71 @@
-# Whisper To Input (fork)
+# Whisper Input
 
-An Android keyboard (IME) that performs speech-to-text with Whisper and types the
-recognized text into any text field. Press the mic, speak, press again — done.
+An Android keyboard (IME) that types what you say. It records your voice, sends it to
+**your own whisper.cpp server** over Tailscale/LAN, and types the transcription into any
+text field. No cloud service, no live streaming, no extra backends.
 
-This fork is set up for **self-hosted Whisper servers** over Tailscale/LAN, with:
+Based on [j3soon/whisper-to-input](https://github.com/j3soon/whisper-to-input) (GPLv3).
 
-- **Adaptive request timeout** — read timeout scales with the recording length
-  (`duration × 4 + 30s`), so long dictations are never cut off by the client
-  (the original app failed after 10 seconds). Configurable in Settings:
-  `Auto` (default), `60s`, `300s`, `600s`.
-- **Releases** — APKs are built and signed locally, then attached to
-  [Releases](https://github.com/tyfnacici/whisper-to-input/releases).
+## Using it
 
-Based on [j3soon/whisper-to-input](https://github.com/j3soon/whisper-to-input) — licensed under GPLv3.
+- **Tap** the mic to start, tap again to send.
+- **Hold** the mic to talk, release to send.
+- **Left key**: cancel while recording or sending; when recordings are waiting, it
+  retries them (long-press discards them).
+- A dot next to the status text shows whether the server is reachable (checked every
+  10 s while the keyboard is visible, and whenever the network changes).
 
-## Installation
+### Nothing is lost when the server is down
 
-1. Download the APK from the
-   [latest release](https://github.com/tyfnacici/whisper-to-input/releases/latest)
-   to your phone and install it.
-   An `Unsafe app blocked` warning may appear — click `More details` → `Install anyway`.
-   If you previously had the upstream app installed, uninstall it first (different
-   signing keys).
+Every recording is saved in app-private storage before it is sent and is only deleted
+once its text has been typed. If the VPN drops, the request times out or the app is
+killed, the audio stays queued (up to 20 recordings / 24 hours) and the retry key shows
+how many are waiting. If the text arrives after you moved to another field, it waits
+behind a **Hazır · yaz** button instead of being typed into the wrong place.
 
-2. Allow the app to record audio and send notifications.
+### Timeouts
 
-3. Open the app and configure the connection to your Whisper server (see below).
+Fully automatic: the read timeout is `duration × 4 + 30 s` (at least 60 s) and the
+upload timeout `duration × 2 + 30 s`. While a request is running the server is pinged
+every 5 s; four failed pings in a row abort the request instead of waiting out the
+timeout, and the audio stays queued.
 
-4. Enable the keyboard: system settings → Manage keyboards → enable `Whisper Input`.
+## Server
 
-5. Focus any text field, switch to `Whisper Input` via the keyboard picker, and start
-   dictating.
-
-   ![Choose input method](docs/images/17-choose-input-method.jpg)
-
-## Server Setup (self-hosted, recommended)
-
-This fork is designed to talk to a **whisper.cpp server** (or any OpenAI-compatible
-transcription endpoint) on your own machine.
-
-Start `whisper-server` with the OpenAI-compatible `/inference` endpoint and make it
-listen on all interfaces so your phone can reach it:
+Run `whisper-server` (whisper.cpp) with `--convert` (needs `ffmpeg`) so it accepts the
+AAC `.m4a` the app records. Model, language and prompt are the server's own settings; the
+app only sends the audio.
 
 ```sh
-whisper-server -m <model>.bin --host 0.0.0.0 --port 8814 --convert
+whisper-server -m ggml-large-v3-turbo-q8_0.bin --host 127.0.0.1 --port 8815 --convert
+tailscale serve --bg --tcp 8815 tcp://127.0.0.1:8815   # expose to your tailnet only
 ```
 
-- `--convert` lets the server accept the `.m4a` audio the app records
-  (requires `ffmpeg` on the server).
-- Expose the port only to trusted networks (e.g. Tailscale, CGNAT range
-  `100.64.0.0/10`) — the server has no authentication.
+The server has no authentication — only expose it to a trusted network.
 
-Then configure the app:
+In the app settings, set **Adres** to `http://<server-tailscale-ip>:8815/inference` and
+use **Bağlantıyı dene** to check it. The default is `http://100.124.60.71:8815/inference`.
 
-```text
-Speech to Text Backend:  OpenAI API
-Endpoint:                http://<SERVER_IP>:8814/inference
-Language Code:                      (leave empty for auto-detect)
+## Install
+
+1. Install the APK. If an older build (different signing key) is installed, uninstall
+   it first.
+2. Open the app and allow the microphone.
+3. Enable the keyboard: system settings → Manage keyboards → `Whisper Input`.
+4. Focus a text field and pick `Whisper Input` from the keyboard switcher.
+
+## Build
+
+```sh
+cd android
+./gradlew testDebugUnitTest assembleDebug   # JDK 17, Android SDK in ANDROID_HOME
 ```
-
-The upstream [Whisper ASR Webservice](https://github.com/ahmetoner/whisper-asr-webservice)
-backend is also still supported (`Endpoint: http://<SERVER_IP>:9000/asr`).
-
-## Keyboard Usage
-
-![Keyboard layout](docs/images/keyboard-layout.jpg)
-
-- `Microphone` (center): start/stop recording and input the recognized text.
-- `Cancel` (bottom left, while recording): discard the current recording.
-- `Backspace` (top right): delete the previous character (hold to repeat).
-- `Enter` (bottom right): newline; while recording it stops and inputs the text plus
-  a newline.
-- `Settings` (top left): open the app settings.
-- `Switch keyboard` (top left): switch back to the previous input method.
-
-## Troubleshooting
-
-- All release APKs are debug builds; capture logs with `adb logcat` (enable USB
-  debugging first) if something fails:
-
-  ```sh
-  adb logcat *:E
-  ```
-
-- If transcription fails with a timeout error, check that the server is reachable from
-  the phone and raise the `Request Timeout` setting.
 
 ## Permissions
 
-- `RECORD_AUDIO`: record audio for voice input.
-- `POST_NOTIFICATIONS`: show error messages while the keyboard is in the background.
+- `RECORD_AUDIO`: record your voice.
+- `INTERNET`, `ACCESS_NETWORK_STATE`: talk to the server and notice network changes.
 
 ## License
 
-This fork is licensed under GPLv3, same as the original project — see the
-[LICENSE](LICENSE) file.
+GPLv3, same as the original project — see [LICENSE](LICENSE).

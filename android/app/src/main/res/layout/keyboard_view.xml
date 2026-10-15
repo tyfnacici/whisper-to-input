@@ -1,255 +1,220 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-
-    This file is part of Whisper To Input, see <https://github.com/j3soon/whisper-to-input>.
-
-    Copyright (c) 2023-2025 Yan-Bin Diau, Johnson Sun
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program. If not, see <https://www.gnu.org/licenses/>.
-
--->
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/keyboard_view"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_alignParentBottom="true"
-    android:layout_gravity="bottom"
     android:background="@drawable/keyboard_bar_background"
+    android:clipChildren="false"
     android:clipToPadding="false"
-    android:paddingTop="@dimen/keyboard_bar_padding_top"
-    android:paddingBottom="@dimen/keyboard_bar_padding_bottom">
-
-    <View
-        android:id="@+id/view_top_bar"
-        android:layout_width="@dimen/keyboard_top_handle_width"
-        android:layout_height="@dimen/keyboard_top_handle_height"
-        android:layout_marginTop="@dimen/keyboard_top_handle_margin_top"
-        android:alpha="0.5"
-        android:background="?attr/colorSurfaceVariant"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        style="@style/RegularText"
-        android:id="@+id/label_status"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/keyboard_status_margin_top"
-        android:layout_marginBottom="@dimen/keyboard_status_margin_bottom"
-        android:text="@string/whisper_to_input"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/btn_mic_frame"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/view_top_bar" />
-
-    <ImageButton
-        style="@style/RegularImage"
-        android:id="@+id/btn_space_bar"
-        android:layout_width="@dimen/keyboard_space_bar_width"
-        android:layout_height="@dimen/keyboard_key_touch_size"
-        android:layout_marginTop="@dimen/keyboard_key_margin"
-        android:padding="@dimen/keyboard_key_icon_padding"
-        android:background="@drawable/space_bar_background"
-        android:contentDescription="@string/desc_space_bar"
-        android:scaleType="fitCenter"
-        android:src="@android:color/transparent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_mic_frame"/>
+    android:orientation="vertical"
+    android:paddingStart="8dp"
+    android:paddingTop="6dp"
+    android:paddingEnd="8dp"
+    android:paddingBottom="10dp">
 
     <FrameLayout
-        android:id="@+id/btn_mic_frame"
-        android:layout_width="@dimen/keyboard_mic_frame_size"
-        android:layout_height="@dimen/keyboard_mic_frame_size"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/label_status">
+        android:layout_width="match_parent"
+        android:layout_height="44dp">
 
         <ImageButton
-            android:id="@+id/btn_mic"
-            android:layout_width="@dimen/keyboard_mic_size"
-            android:layout_height="@dimen/keyboard_mic_size"
-            android:layout_gravity="center_horizontal|center_vertical"
-            android:background="@drawable/fab_background"
-            android:contentDescription="@string/start_speech_to_text"
-            android:elevation="@dimen/keyboard_mic_elevation"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:scaleType="fitCenter"
-            android:src="@drawable/mic_idle" />
+            android:id="@+id/btn_previous_ime"
+            style="@style/KeyIcon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="start|center_vertical"
+            android:background="@drawable/bg_key_round"
+            android:contentDescription="@string/desc_switch_ime"
+            android:src="@drawable/ic_keyboard" />
 
-        <ProgressBar
-            android:id="@+id/pb_waiting_icon"
-            style="?android:attr/progressBarStyle"
-            android:layout_width="@dimen/keyboard_waiting_icon_size"
-            android:layout_height="@dimen/keyboard_waiting_icon_size"
-            android:layout_gravity="center_horizontal|center_vertical"
-            android:clickable="false"
-            android:focusable="false"
-            android:indeterminateTint="?attr/colorPrimary"
-            android:visibility="invisible" />
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/mic_ripples"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="invisible">
+            android:layout_marginStart="52dp"
+            android:layout_marginEnd="52dp">
 
-            <ImageView
-                android:id="@+id/mic_ripple_0"
-                android:layout_width="@dimen/keyboard_mic_ripple_0_size"
-                android:layout_height="@dimen/keyboard_mic_ripple_0_size"
-                android:alpha="0"
-                android:src="@drawable/mic_ripple_0"
-                android:tint="?attr/colorPrimary"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+            <LinearLayout
+                android:id="@+id/status_group"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-            <ImageView
-                android:id="@+id/mic_ripple_1"
-                android:layout_width="@dimen/keyboard_mic_ripple_1_size"
-                android:layout_height="@dimen/keyboard_mic_ripple_1_size"
-                android:alpha="0"
-                android:src="@drawable/mic_ripple_1"
-                android:tint="?attr/colorPrimary"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                <View
+                    android:id="@+id/status_dot"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_dot"
+                    android:visibility="gone" />
 
-            <ImageView
-                android:id="@+id/mic_ripple_2"
-                android:layout_width="@dimen/keyboard_mic_ripple_2_size"
-                android:layout_height="@dimen/keyboard_mic_ripple_2_size"
-                android:alpha="0"
-                android:src="@drawable/mic_ripple_2"
-                android:tint="?attr/colorPrimary"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                <TextView
+                    android:id="@+id/label_status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="13sp" />
+            </LinearLayout>
 
-            <ImageView
-                android:id="@+id/mic_ripple_3"
-                android:layout_width="@dimen/keyboard_mic_ripple_3_size"
-                android:layout_height="@dimen/keyboard_mic_ripple_3_size"
-                android:alpha="0"
-                android:src="@drawable/mic_ripple_3"
-                android:tint="?attr/colorPrimary"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+            <TextView
+                android:id="@+id/chip_ready"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_chip"
+                android:drawablePadding="8dp"
+                android:drawableStart="@drawable/ic_edit"
+                android:drawableTint="?attr/colorOnPrimaryContainer"
+                android:gravity="center_vertical"
+                android:minWidth="0dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="16dp"
+                android:text="@string/chip_ready"
+                android:textColor="?attr/colorOnPrimaryContainer"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </FrameLayout>
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-
+        <ImageButton
+            android:id="@+id/btn_settings"
+            style="@style/KeyIcon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="end|center_vertical"
+            android:background="@drawable/bg_key_round"
+            android:contentDescription="@string/desc_settings"
+            android:src="@drawable/ic_settings" />
     </FrameLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/mic_frame_size"
+        android:clipChildren="false"
+        android:gravity="center"
+        android:orientation="horizontal">
 
-    <ImageButton
-        style="@style/RegularImage"
-        android:id="@+id/btn_enter"
-        android:layout_width="@dimen/keyboard_key_touch_size"
-        android:layout_height="@dimen/keyboard_key_touch_size"
-        android:layout_marginEnd="@dimen/keyboard_key_margin"
-        android:padding="@dimen/keyboard_key_icon_padding"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/start_transcribing"
-        android:scaleType="fitCenter"
-        android:src="@drawable/btn_enter"
-        app:layout_constraintBottom_toBottomOf="@+id/btn_space_bar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/btn_space_bar" />
+        <FrameLayout
+            android:layout_width="@dimen/key_touch_size"
+            android:layout_height="@dimen/key_touch_size"
+            android:clipChildren="false">
 
-    <ImageButton
-        style="@style/RegularImage"
-        android:id="@+id/btn_cancel"
-        android:layout_width="@dimen/keyboard_key_touch_size"
-        android:layout_height="@dimen/keyboard_key_touch_size"
-        android:layout_marginEnd="@dimen/keyboard_key_margin"
-        android:padding="@dimen/keyboard_key_icon_padding"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription=""
-        android:scaleType="fitCenter"
-        android:src="@drawable/btn_cancel"
-        android:visibility="invisible"
-        app:layout_constraintTop_toTopOf="@+id/btn_mic_frame"
-        app:layout_constraintBottom_toBottomOf="@+id/btn_mic_frame"
-        app:layout_constraintEnd_toStartOf="@+id/btn_mic_frame" />
+            <ImageButton
+                android:id="@+id/btn_left"
+                style="@style/KeyIcon"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_key_round"
+                android:contentDescription="@string/desc_cancel"
+                android:src="@drawable/ic_close"
+                android:visibility="invisible" />
 
-    <ImageButton
-        style="@style/RegularImage"
-        android:id="@+id/btn_retry"
-        android:layout_width="@dimen/keyboard_key_touch_size"
-        android:layout_height="@dimen/keyboard_key_touch_size"
-        android:layout_marginEnd="@dimen/keyboard_key_margin"
-        android:padding="@dimen/keyboard_key_icon_padding"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription=""
-        android:scaleType="fitCenter"
-        android:src="@drawable/btn_retry"
-        android:visibility="invisible"
-        app:layout_constraintTop_toTopOf="@+id/btn_mic_frame"
-        app:layout_constraintBottom_toBottomOf="@+id/btn_mic_frame"
-        app:layout_constraintEnd_toStartOf="@+id/btn_mic_frame" />
+            <TextView
+                android:id="@+id/badge_pending"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="top|end"
+                android:background="@drawable/bg_badge"
+                android:gravity="center"
+                android:textColor="?attr/colorOnPrimary"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </FrameLayout>
 
-    <com.example.whispertoinput.keyboard.BackspaceButton
-        style="@style/RegularImage"
-        android:id="@+id/btn_backspace"
-        android:layout_width="@dimen/keyboard_key_touch_size"
-        android:layout_height="@dimen/keyboard_key_touch_size"
-        android:layout_marginStart="@dimen/keyboard_key_margin"
-        android:padding="@dimen/keyboard_key_icon_padding"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/backspace_button_hint"
-        android:scaleType="fitCenter"
-        android:src="@drawable/btn_backspace"
-        app:layout_constraintStart_toEndOf="@+id/btn_mic_frame"
-        app:layout_constraintTop_toTopOf="@+id/btn_mic_frame"
-        app:layout_constraintBottom_toBottomOf="@+id/btn_mic_frame"/>
+        <FrameLayout
+            android:layout_width="@dimen/mic_frame_size"
+            android:layout_height="@dimen/mic_frame_size"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:clipChildren="false">
 
-    <ImageButton
-        style="@style/RegularImage"
-        android:id="@+id/btn_previous_ime"
-        android:layout_width="@dimen/keyboard_key_touch_size"
-        android:layout_height="@dimen/keyboard_key_touch_size"
-        android:layout_marginStart="@dimen/keyboard_key_margin"
-        android:layout_marginTop="@dimen/keyboard_key_margin"
-        android:padding="@dimen/keyboard_key_icon_padding"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/btn_previous_ime_hint"
-        android:scaleType="fitCenter"
-        android:src="@drawable/btn_previous_ime"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/view_top_bar" />
+            <View
+                android:id="@+id/ring_0"
+                android:layout_width="@dimen/mic_size"
+                android:layout_height="@dimen/mic_size"
+                android:layout_gravity="center"
+                android:alpha="0"
+                android:background="@drawable/bg_ring" />
 
-    <ImageButton
-        style="@style/RegularImage"
-        android:id="@+id/btn_settings"
-        android:layout_width="@dimen/keyboard_settings_icon_size"
-        android:layout_height="@dimen/keyboard_settings_icon_size"
-        android:layout_marginEnd="@dimen/keyboard_key_margin"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/btn_previous_ime_hint"
-        android:scaleType="fitCenter"
-        android:src="@drawable/btn_settings"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/label_status"
-        app:layout_constraintBottom_toBottomOf="@id/label_status"/>
-</androidx.constraintlayout.widget.ConstraintLayout>
+            <View
+                android:id="@+id/ring_1"
+                android:layout_width="@dimen/mic_size"
+                android:layout_height="@dimen/mic_size"
+                android:layout_gravity="center"
+                android:alpha="0"
+                android:background="@drawable/bg_ring" />
+
+            <ProgressBar
+                android:id="@+id/progress_sending"
+                style="?android:attr/progressBarStyle"
+                android:layout_width="84dp"
+                android:layout_height="84dp"
+                android:layout_gravity="center"
+                android:indeterminateTint="?attr/colorPrimary"
+                android:visibility="gone" />
+
+            <FrameLayout
+                android:id="@+id/btn_mic"
+                android:layout_width="@dimen/mic_size"
+                android:layout_height="@dimen/mic_size"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_mic"
+                android:clickable="true"
+                android:contentDescription="@string/desc_mic"
+                android:elevation="4dp"
+                android:focusable="true">
+
+                <ImageView
+                    android:id="@+id/img_mic"
+                    android:layout_width="@dimen/mic_icon_size"
+                    android:layout_height="@dimen/mic_icon_size"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_mic" />
+            </FrameLayout>
+        </FrameLayout>
+
+        <com.example.whispertoinput.keyboard.BackspaceButton
+            android:id="@+id/btn_backspace"
+            style="@style/KeyIcon"
+            android:layout_width="@dimen/key_touch_size"
+            android:layout_height="@dimen/key_touch_size"
+            android:background="@drawable/bg_key_round"
+            android:contentDescription="@string/desc_backspace"
+            android:src="@drawable/ic_backspace" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btn_space"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_key_pill"
+            android:contentDescription="@string/desc_space"
+            android:gravity="center"
+            android:text="@string/space_label"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="12sp" />
+
+        <ImageButton
+            android:id="@+id/btn_enter"
+            style="@style/KeyIcon"
+            android:layout_width="56dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_key_enter"
+            android:contentDescription="@string/desc_enter"
+            android:src="@drawable/ic_return"
+            app:tint="?attr/colorOnPrimaryContainer" />
+    </LinearLayout>
+</LinearLayout>

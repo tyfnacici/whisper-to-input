@@ -1,22 +1,4 @@
-/*
- * This file is part of Whisper To Input, see <https://github.com/j3soon/whisper-to-input>.
- *
- * Copyright (c) 2023-2025 Yan-Bin Diau, Johnson Sun
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
-
+// SPDX-License-Identifier: GPL-3.0-or-later
 package com.example.whispertoinput.recorder
 
 import android.Manifest
@@ -24,145 +6,76 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.os.Build
+import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.ContextCompat
-import com.example.whispertoinput.R
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.io.File
-import java.io.IOException
 
-private const val MEDIA_RECORDER_CONSTRUCTOR_DEPRECATION_API_LEVEL = 31
+private const val TAG = "whisper-input"
+private const val SAMPLE_RATE_HZ = 16_000
+private const val BIT_RATE = 48_000
 
-class RecorderManager(context: Context) {
-    companion object {
-        fun requiredPermissions() = arrayOf(
-            Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.POST_NOTIFICATIONS,
-        )
-    }
-
+/** Records mono 16 kHz AAC (m4a), the rate whisper models work at. */
+class RecorderManager(private val context: Context) {
     private var recorder: MediaRecorder? = null
-    private var onUpdateMicrophoneAmplitude: (Int) -> Unit = { }
-    private var microphoneAmplitudeUpdateJob: Job? = null
-    private val amplitudeReportPeriod: Long
-    private val context: Context
+    private var startedAtMs = 0L
 
-    init {
-        this.context = context
-        this.amplitudeReportPeriod =
-            context.resources.getInteger(R.integer.recorder_amplitude_report_period).toLong()
-    }
+    val isRecording: Boolean get() = recorder != null
 
-    fun start(context: Context, filename: String, useOggFormat: Boolean = false) {
-        recorder?.apply {
-            stop()
-            release()
+    /** Starts recording into [file]; returns false if the microphone could not be opened. */
+    fun start(file: File): Boolean {
+        stopQuietly()
+        file.delete()
+        val r = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder(context)
+        } else {
+            @Suppress("DEPRECATION") MediaRecorder()
         }
-
-        recorder =
-            if (Build.VERSION.SDK_INT >= MEDIA_RECORDER_CONSTRUCTOR_DEPRECATION_API_LEVEL) {
-                MediaRecorder(context)
-            } else {
-                MediaRecorder()
-            }
-
-        val file: File = File(filename)
-        if (file.exists()) {
-            file.delete()
-            Log.e("whisper-input", "File should not exist")
-        }
-
-        recorder!!.apply {
-            setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
-            if (useOggFormat) {
-                // Use the OGG and OPUS encoder following the recommendation in NVIDIA Riva
-                // Ref: https://docs.nvidia.com/deeplearning/riva/user-guide/docs/reference/protos/riva_audio.proto.html
-                // This format and encoder is the only one supported by both NVIDIA Riva and MediaRecorder.
-                setOutputFormat(MediaRecorder.OutputFormat.OGG)
-                setAudioEncoder(MediaRecorder.AudioEncoder.OPUS)
-            } else {
-                // Use M4A format for other backends
-                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-            }
-            setOutputFile(filename)
-
-            try {
-                prepare()
-            } catch (e: IOException) {
-                Log.e("whisper-input", "prepare() failed")
-            }
-
-            start()
-        }
-
-        // Start a job to periodically report current amplitude
-        microphoneAmplitudeUpdateJob?.cancel()
-        microphoneAmplitudeUpdateJob = CoroutineScope(Dispatchers.Main).launch {
-            while (recorder != null) {
-                val amplitude = recorder?.maxAmplitude ?: 0
-                onUpdateMicrophoneAmplitude(amplitude)
-                delay(amplitudeReportPeriod)
-            }
-        }
-    }
-
-    fun stop() {
-        recorder?.apply {
-            stop()
-            release()
-        }
-        recorder = null
-
-        microphoneAmplitudeUpdateJob?.cancel()
-        microphoneAmplitudeUpdateJob = null
-    }
-
-    // Finalizes the current recording segment and immediately starts recording
-    // into a fresh file, keeping the recording session alive (used by live
-    // transcription for chunk rotation). Returns true on success; false means
-    // the caller should fall back to the single-shot flow.
-    fun restart(context: Context, filename: String, useOggFormat: Boolean = false): Boolean {
-        try {
-            recorder?.stop()
-        } catch (e: Exception) {
-            // stop() throws if the segment has no valid data (< 1s); the restart
-            // can still proceed since a fresh file is used either way.
-            Log.w("whisper-input", "restart stop() failed: ${e.message}")
-        }
-        recorder?.release()
-        recorder = null
-
         return try {
-            start(context, filename, useOggFormat)
+            r.apply {
+                setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioSamplingRate(SAMPLE_RATE_HZ)
+                setAudioEncodingBitRate(BIT_RATE)
+                setAudioChannels(1)
+                setOutputFile(file.absolutePath)
+                prepare()
+                start()
+            }
+            recorder = r
+            startedAtMs = SystemClock.elapsedRealtime()
             true
         } catch (e: Exception) {
-            Log.w("whisper-input", "restart start() failed: ${e.message}")
+            Log.e(TAG, "recorder start failed: ${e.message}")
+            runCatching { r.release() }
             false
         }
     }
 
-    // Assign onUpdateMicrophoneAmplitude callback
-    fun setOnUpdateMicrophoneAmplitude(onUpdateMicrophoneAmplitude: (Int) -> Unit) {
-        this.onUpdateMicrophoneAmplitude = onUpdateMicrophoneAmplitude
-    }
-
-    // Returns whether all of the permissions are granted.
-    fun allPermissionsGranted(context: Context): Boolean {
-        for (permission in requiredPermissions()) {
-            if (ContextCompat.checkSelfPermission(
-                    context,
-                    permission
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                return false
-            }
+    /** Stops recording and returns its length in milliseconds, or null if nothing usable was recorded. */
+    fun stop(): Long? {
+        val r = recorder ?: return null
+        recorder = null
+        val durationMs = SystemClock.elapsedRealtime() - startedAtMs
+        return try {
+            r.stop()
+            durationMs
+        } catch (e: Exception) {
+            // stop() throws when no valid audio was captured (very short recording).
+            Log.w(TAG, "recorder stop failed: ${e.message}")
+            null
+        } finally {
+            runCatching { r.release() }
         }
-
-        return true
     }
+
+    private fun stopQuietly() {
+        recorder?.let { runCatching { it.stop() }; runCatching { it.release() } }
+        recorder = null
+    }
+
+    fun hasMicrophonePermission(): Boolean =
+        ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
 }
