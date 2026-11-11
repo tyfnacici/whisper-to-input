@@ -1,0 +1,1 @@
+Deploy işlemi bitti, fakat servis yanıt vermiyor. Kubernetes üzerindeki podları yeniden başlattım. Bu sefer çalışacak mı?

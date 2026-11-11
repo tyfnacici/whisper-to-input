@@ -1,0 +1,1 @@
+Bugün yeni bir branch açtım. Sonra, değişiklikleri kontrol ettim, ama hata hâlâ duruyor. Sence, sorun nerede olabilir?

@@ -16,7 +16,7 @@ AB_PORT=${AB_PORT:-8816}
 WHISPER_RUN_SOURCED=1 source "$HERE/whisper-stt-run.sh"
 set -u
 if [[ $MODE == before ]]; then
-  ARGS=(-dev 0 -l tr -nfa --convert --vad -vm "$VAD" --carry-initial-prompt --prompt "$PROMPT")
+  ARGS=(-dev 0 -l tr -nfa --convert --vad -vm "$VAD" --carry-initial-prompt --prompt "$PROMPT_LIVE")
 else
   ARGS=("${WHISPER_ARGS[@]}")
 fi

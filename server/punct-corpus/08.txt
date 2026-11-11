@@ -1,0 +1,1 @@
+Önce branch'i güncelleyelim, sonra PR'ı birleştirelim. Deploy için onay gerekiyor mu? Gerekirse yöneticiye yazarım, çünkü acil bir durum var.

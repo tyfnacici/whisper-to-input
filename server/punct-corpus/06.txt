@@ -1,0 +1,1 @@
+Sunucu yeniden başladı, ancak log dosyası boş kaldı. Disk dolu muydu? Önce yer açtım, sonra servisi tekrar çalıştırdım. Şimdi sorun yok.

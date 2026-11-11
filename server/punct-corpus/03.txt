@@ -1,0 +1,1 @@
+Supabase tarafında, yeni bir tablo oluşturdum. İzinleri ayarladım, sonra test verisi ekledim. Her şey yolunda görünüyor. Yarın, yayına alacağım.
