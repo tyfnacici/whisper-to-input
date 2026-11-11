@@ -29,8 +29,6 @@ object Transcriber {
         .connectTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    private val BLANK_AUDIO = Regex("""\[BLANK_AUDIO]""")
-
     /** Returns the transcribed text, empty if no speech was found. */
     suspend fun transcribe(endpoint: String, audio: File, durationMs: Long?): String {
         if (!Endpoint.isValid(endpoint)) {
@@ -49,7 +47,7 @@ object Transcriber {
 
         val response = execute(client.newCall(request))
         when {
-            response.successful -> return BLANK_AUDIO.replace(response.body, "").trim()
+            response.successful -> return HallucinationFilter.clean(response.body)
             response.code >= 500 -> throw TranscriptionException(
                 "Sunucu hata verdi (${response.code}).", retryable = true
             )
