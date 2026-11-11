@@ -45,6 +45,17 @@ class PunctScoreTest(unittest.TestCase):
         self.assertAlmostEqual(s["wer"], 1 / 5)
         self.assertEqual(s["punct_f1"], 1.0)
 
+    def test_sentence_boundary_ignores_commas(self):
+        hyp = "Bugün branch açtım ama hata duruyor. Sence sorun nerede?"
+        self.assertEqual(score(REF, hyp)["sent_f1"], 1.0)
+
+    def test_sentence_boundary_question_equals_stop(self):
+        self.assertEqual(score("Nerede?", "Nerede.")["sent_f1"], 1.0)
+
+    def test_run_on(self):
+        hyp = "Bugün branch açtım ama hata duruyor sence sorun nerede"
+        self.assertEqual(score(REF, hyp)["sent_f1"], 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()

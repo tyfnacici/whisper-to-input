@@ -72,7 +72,15 @@ def score(ref: str, hyp: str) -> dict:
     f1 = 2 * p * r / (p + r) if p + r else 0.0
     wer = _edit_distance(rw, hw) / len(rw) if rw else 0.0
     density = 100.0 * hyp_marks / len(hw) if hw else 0.0
-    return {"wer": wer, "punct_p": p, "punct_r": r, "punct_f1": f1,
+    # Sentence boundaries: STOP and QUESTION count as one class; commas are ignored.
+    bounds = ("STOP", "QUESTION")
+    ref_b = sum(1 for _, c in rt if c in bounds)
+    hyp_b = sum(1 for _, c in ht if c in bounds)
+    tp_b = sum(1 for i, j in _pairs(rw, hw) if rt[i][1] in bounds and ht[j][1] in bounds)
+    sp = tp_b / hyp_b if hyp_b else 0.0
+    sr = tp_b / ref_b if ref_b else 0.0
+    sf1 = 2 * sp * sr / (sp + sr) if sp + sr else 0.0
+    return {"sent_p": sp, "sent_r": sr, "sent_f1": sf1,"wer": wer, "punct_p": p, "punct_r": r, "punct_f1": f1,
             "density": density, "ref_marks": ref_marks, "hyp_marks": hyp_marks}
 
 

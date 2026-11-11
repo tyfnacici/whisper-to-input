@@ -9,6 +9,9 @@
   configs against a temporary server on 8816, prints per-clip, `SUMMARY` and `WINNER` lines. Set
   `PUNCT_CLIPS_DIR` to a dir of your own `name.wav` + `name.txt` pairs to include them (stdout only).
 - `punct_score.py REF HYP` — stdlib scorer (WER, punctuation F1, density); tests: `python3 -m unittest discover -s server -p 'test_punct_score.py'`.
+- `sentence-ab.sh [all|<config>]` — mixed-sentence root-cause A/B (segmentation, language, prompt) on a temporary
+  server on 8816, using long-dictation and mid-sentence-pause TTS clips; prints per-row, `SUMMARY` and `WINNER` lines.
+- `SENTENCE-RESULTS.md` — recorded sentence-coherence before/after (no config qualified; launcher unchanged).
 - `PUNCT-RESULTS.md` — recorded punctuation before/after (no config qualified; launcher prompt unchanged).
 - `AB-RESULTS.md` — recorded output of one before/after run.
 
